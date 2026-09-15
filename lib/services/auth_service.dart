@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/app_user.dart';
 
@@ -9,10 +10,12 @@ import '../models/app_user.dart';
 class AuthService {
   final FirebaseAuth _auth;
   final FirebaseFirestore _db;
+  final GoogleSignIn _googleSignIn;
 
-  AuthService({FirebaseAuth? auth, FirebaseFirestore? db})
+  AuthService({FirebaseAuth? auth, FirebaseFirestore? db, GoogleSignIn? googleSignIn})
       : _auth = auth ?? FirebaseAuth.instance,
-        _db = db ?? FirebaseFirestore.instance;
+        _db = db ?? FirebaseFirestore.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn();
 
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -27,12 +30,31 @@ class AuthService {
     required String password,
   }) async {
     final cred = await _auth.createUserWithEmailAndPassword(email: email, password: password);
-    await _ensureProfile(cred.user!, name: name, email: email);
+    await ensureProfile(cred.user!, name: name, email: email);
     return cred;
   }
 
   Future<UserCredential> signInWithEmail({required String email, required String password}) {
     return _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  // ---------------------------------------------------------------------
+  // Google
+  // ---------------------------------------------------------------------
+
+  Future<UserCredential> signInWithGoogle() async {
+    final account = await _googleSignIn.signIn();
+    if (account == null) {
+      throw FirebaseAuthException(code: 'sign-in-canceled', message: 'Google sign-in was canceled.');
+    }
+    final googleAuth = await account.authentication;
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+    final result = await _auth.signInWithCredential(credential);
+    await ensureProfile(result.user!, name: account.displayName, email: account.email);
+    return result;
   }
 
   // ---------------------------------------------------------------------
@@ -67,13 +89,16 @@ class AuthService {
   }) async {
     final credential = PhoneAuthProvider.credential(verificationId: verificationId, smsCode: smsCode);
     final result = await _auth.signInWithCredential(credential);
-    await _ensureProfile(result.user!, name: nameIfNewUser, phone: result.user!.phoneNumber);
+    await ensureProfile(result.user!, name: nameIfNewUser, phone: result.user!.phoneNumber);
     return result;
   }
 
   // ---------------------------------------------------------------------
 
-  Future<void> signOut() => _auth.signOut();
+  Future<void> signOut() async {
+    await _googleSignIn.signOut();
+    await _auth.signOut();
+  }
 
   Future<AppUser?> getProfile(String uid) async {
     final snap = await _db.collection('users').doc(uid).get();
@@ -95,7 +120,10 @@ class AuthService {
     await _db.collection('users').doc(uid).update(updates);
   }
 
-  Future<void> _ensureProfile(User user, {String? name, String? phone, String? email}) async {
+  /// Creates the users/{uid} profile document on first sign-in, for any
+  /// auth method. No-op if the profile already exists (idempotent, so it's
+  /// safe to call from multiple sign-in paths and a central listener).
+  Future<void> ensureProfile(User user, {String? name, String? phone, String? email}) async {
     final ref = _db.collection('users').doc(user.uid);
     final existing = await ref.get();
     if (existing.exists) return;

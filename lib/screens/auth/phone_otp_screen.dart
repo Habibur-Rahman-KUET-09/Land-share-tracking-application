@@ -54,8 +54,10 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
           });
         },
         onAutoVerified: (_) {
-          // Android may skip typing entirely — AppAuthProvider's authStateChanges
-          // listener will pick up the new session automatically.
+          // Android may skip typing entirely: startPhoneVerification already
+          // signed the user in internally, so AppAuthProvider's authStateChanges
+          // listener fires and swaps this whole screen out for GroupListScreen
+          // (it also creates the users/{uid} profile document, same as confirmOtp).
         },
         onFailed: (e) {
           if (!mounted) return;

@@ -31,6 +31,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        // A stable, committed debug keystore (instead of Gradle's default
+        // per-machine ~/.android/debug.keystore) so every build — local or
+        // CI — is signed with the same key and has the same SHA-1. Google
+        // Sign-In needs that fingerprint registered once in Firebase Console
+        // and it then keeps working across rebuilds.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

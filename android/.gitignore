@@ -12,3 +12,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Exception: app/debug.keystore is a committed, stable DEBUG-only keystore
+# (well-known default password "android", not a real secret) so CI and local
+# builds share one SHA-1 — needed for Google Sign-In to work reliably.
+!app/debug.keystore

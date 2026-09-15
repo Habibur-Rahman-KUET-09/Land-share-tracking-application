@@ -32,8 +32,8 @@ Auth/Firestore/Storage/Messaging কল কাজ করবে না)। এট
 1. **Firebase প্রজেক্ট তৈরি করুন**: https://console.firebase.google.com এ
    গিয়ে "Add project" — নাম যা খুশি দিন।
 2. **প্রজেক্টে এই সার্ভিসগুলো চালু করুন** (Console থেকে):
-   - **Authentication** → Sign-in method → **Phone** এবং **Email/Password**
-     দুটোই enable করুন।
+   - **Authentication** → Sign-in method → **Phone**, **Email/Password**,
+     এবং **Google** তিনটাই enable করুন।
    - **Firestore Database** → Create database (production mode)।
    - **Storage** → Get started।
    - **Cloud Messaging** — এমনিতেই চালু থাকে, আলাদা করে কিছু করতে হবে না।
@@ -52,12 +52,29 @@ Auth/Firestore/Storage/Messaging কল কাজ করবে না)। এট
    ডাউনলোড করে সঠিক জায়গায় বসিয়ে দেবে। যে প্রজেক্ট বানিয়েছেন সেটা সিলেক্ট
    করুন, platform হিসেবে অন্তত Android বেছে নিন (FRD: "Android প্রথমে")।
 5. **Firestore/Storage security rules ডিপ্লয় করুন** (`firestore.rules`,
-   `storage.rules` এই রিপোতে আগে থেকেই লেখা আছে):
+   `storage.rules` এই রিপোতে আগে থেকেই লেখা আছে) — **এই ধাপটা ছাড়া লগইন
+   করলেও অ্যাপ কিছু দেখাবে না/আটকে থাকবে**, কারণ Firestore এর ডিফল্ট rules
+   সব read/write আটকে দেয়:
    ```bash
    firebase use --add   # আপনার প্রজেক্ট সিলেক্ট করুন
    firebase deploy --only firestore:rules,storage
    ```
-6. **(ঐচ্ছিক কিন্তু recommended) Notification Cloud Functions ডিপ্লয় করুন**
+   `firebase login` করতে না পারলে (CLI অ্যাক্সেস না থাকলে) Console থেকেও
+   করা যায়: **Firestore Database → Rules** ট্যাবে গিয়ে এই রিপোর
+   `firestore.rules` ফাইলের পুরো কন্টেন্ট paste করে **Publish** চাপুন
+   (Storage এর জন্য একইভাবে **Storage → Rules** এ `storage.rules`)।
+6. **Google Sign-In চালু করতে SHA-1 ফিঙ্গারপ্রিন্ট যোগ করুন**: এই রিপোতে
+   একটা স্থায়ী debug keystore কমিট করা আছে (`android/app/debug.keystore`)
+   যেটা দিয়ে লোকাল ও CI দুই জায়গাতেই build সাইন হয়, তাই একবার যোগ করলেই
+   চলবে —
+   ```bash
+   keytool -list -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey
+   ```
+   এর SHA1 লাইনটা কপি করে Firebase Console → **Project settings** → **Your
+   apps** → Android app (`com.landshare.land_installment_tracker`) →
+   **Add fingerprint** এ পেস্ট করুন। (এই রিপোর জন্য সেই ফিঙ্গারপ্রিন্ট:
+   `11:F5:BF:CF:B2:92:32:11:12:CE:B2:BA:F4:90:84:20:AF:DA:EE:97`)
+7. **(ঐচ্ছিক কিন্তু recommended) Notification Cloud Functions ডিপ্লয় করুন**
    (`functions/` — due-date reminder, missed-payment alert, pending-approval
    push সব এখানে):
    ```bash
@@ -68,7 +85,7 @@ Auth/Firestore/Storage/Messaging কল কাজ করবে না)। এট
    (pay-as-you-go) প্ল্যানে** থাকতে হবে (Firebase console থেকে আপগ্রেড
    করুন) — এটা ছাড়া শুধু `onContributionCreated` (approval push) কাজ
    করবে, বাকি reminder গুলো না।
-7. এখন `flutter run` চালালেই আসল Firebase এর সাথে কাজ করবে।
+8. এখন `flutter run` চালালেই আসল Firebase এর সাথে কাজ করবে।
 
 ## প্রজেক্ট গঠন
 

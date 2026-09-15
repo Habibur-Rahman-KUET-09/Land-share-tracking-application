@@ -51,6 +51,46 @@ class AuthGate extends StatelessWidget {
     if (auth.firebaseUser == null) {
       return const LoginScreen();
     }
+    // Signed in to Firebase Auth, but the users/{uid} profile couldn't be
+    // read/created (most likely firestore.rules hasn't been deployed to the
+    // Firebase console yet, so the default rules deny the read) — show this
+    // instead of silently landing on a broken/empty group list.
+    if (auth.profile == null && auth.authError != null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_off, size: 48, color: Theme.of(context).colorScheme.error),
+                const SizedBox(height: 16),
+                const Text(
+                  'প্রোফাইল লোড করা যায়নি। Firestore security rules ডিপ্লয় করা আছে '
+                  'কিনা Firebase Console এ চেক করুন (Firestore Database > Rules)।',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  auth.authError!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () => context.read<AppAuthProvider>().refreshProfile(),
+                  child: const Text('আবার চেষ্টা করুন'),
+                ),
+                TextButton(
+                  onPressed: () => context.read<AppAuthProvider>().signOut(),
+                  child: const Text('সাইন আউট'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return const GroupListScreen();
   }
 }
