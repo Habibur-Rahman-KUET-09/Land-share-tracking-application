@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "000000000000",
-    "project_id": "land-installment-tracker-placeholder",
-    "storage_bucket": "land-installment-tracker-placeholder.appspot.com"
+    "project_number": "510783432326",
+    "project_id": "landsharetrackingsystem",
+    "storage_bucket": "landsharetrackingsystem.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "mobilesdk_app_id": "1:510783432326:android:e758f7582d03eea32e5307",
         "android_client_info": {
           "package_name": "com.landshare.land_installment_tracker"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "REPLACE_ME"
+          "current_key": "AIzaSyDks9FxaKAinOy-5xFkrQkEixvVw9mPlu4"
         }
       ],
       "services": {
