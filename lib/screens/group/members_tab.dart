@@ -1,0 +1,287 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../l10n/app_strings.dart';
+import '../../models/app_user.dart';
+import '../../models/group_member.dart';
+import '../../models/land_group.dart';
+import '../../services/group_service.dart';
+import '../../utils/currency_formatter.dart';
+import '../../widgets/confirm_dialog.dart';
+import '../../widgets/status_chip.dart';
+
+/// FR 2.1 member/role management. "Invite" is search-by-phone/email against
+/// already-registered users (see [_AddMemberDialog._search]) rather than a
+/// deferred invite-link system — simpler, and the FRD's "Invite link /
+/// Phone number দিয়ে" bullet is satisfied by the phone-number path; a
+/// person who hasn't signed up yet is asked to register first, then can be
+/// added.
+class MembersTab extends StatelessWidget {
+  final LandGroup group;
+  final bool isAdmin;
+  final String currentUid;
+  const MembersTab({super.key, required this.group, required this.isAdmin, required this.currentUid});
+
+  @override
+  Widget build(BuildContext context) {
+    final groupService = GroupService();
+    return Scaffold(
+      body: StreamBuilder<List<GroupMember>>(
+        stream: groupService.watchMembers(group.id),
+        builder: (context, snapshot) {
+          final members = snapshot.data ?? [];
+          final active = members.where((m) => m.isActive).toList();
+          final exited = members.where((m) => !m.isActive).toList();
+          return ListView(
+            padding: const EdgeInsets.all(12),
+            children: [
+              ...active.map((m) => _MemberTile(
+                    group: group,
+                    member: m,
+                    isAdmin: isAdmin,
+                    currentUid: currentUid,
+                  )),
+              if (exited.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('বের হয়ে যাওয়া সদস্য', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                ),
+                ...exited.map((m) => _MemberTile(
+                      group: group,
+                      member: m,
+                      isAdmin: isAdmin,
+                      currentUid: currentUid,
+                    )),
+              ],
+            ],
+          );
+        },
+      ),
+      floatingActionButton: isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: () => showDialog(
+                context: context,
+                builder: (_) => _AddMemberDialog(group: group, invitedBy: currentUid),
+              ),
+              icon: const Icon(Icons.person_add),
+              label: Text(S.t(context, 'add_member')),
+            )
+          : null,
+    );
+  }
+}
+
+class _MemberTile extends StatelessWidget {
+  final LandGroup group;
+  final GroupMember member;
+  final bool isAdmin;
+  final String currentUid;
+  const _MemberTile({required this.group, required this.member, required this.isAdmin, required this.currentUid});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: FirebaseFirestore.instance.collection('users').doc(member.uid).get(),
+      builder: (context, snap) {
+        final name = snap.data?.exists == true
+            ? AppUser.fromMap(member.uid, snap.data!.data()!).name
+            : member.uid;
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ListTile(
+            title: Text(name),
+            subtitle: Text(
+              '${CurrencyFormatter.format(member.monthlyAmount)}/মাস'
+              '${member.uid == currentUid ? ' • আপনি' : ''}',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatusChip(
+                  label: S.t(context, member.isAdmin ? 'role_admin' : 'role_member'),
+                  color: member.isAdmin ? Colors.indigo : Colors.blueGrey,
+                ),
+                if (isAdmin && member.isActive)
+                  PopupMenuButton<String>(
+                    onSelected: (v) async {
+                      final groupService = GroupService();
+                      if (v == 'toggle_role') {
+                        await groupService.updateMemberRole(
+                          groupId: group.id,
+                          uid: member.uid,
+                          role: member.isAdmin ? GroupRole.member : GroupRole.admin,
+                          actorId: currentUid,
+                        );
+                      } else if (v == 'set_amount' && group.contributionType == ContributionType.custom) {
+                        final amount = await _promptAmount(context, member.monthlyAmount);
+                        if (amount != null) {
+                          await groupService.updateMemberAmount(
+                            groupId: group.id,
+                            uid: member.uid,
+                            monthlyAmount: amount,
+                            actorId: currentUid,
+                          );
+                        }
+                      } else if (v == 'exit') {
+                        final confirmed = await showConfirmDialog(
+                          context,
+                          title: S.t(context, 'exit_group'),
+                          message: '"$name" কে গ্রুপ থেকে বের করে দেওয়া হবে। তার আগের হিসাব ঠিক থাকবে।',
+                          isDestructive: true,
+                          confirmLabel: S.t(context, 'exit_group'),
+                        );
+                        if (confirmed) {
+                          await groupService.exitMember(groupId: group.id, uid: member.uid, actorId: currentUid);
+                        }
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(value: 'toggle_role', child: Text(member.isAdmin ? 'Member করুন' : 'Admin করুন')),
+                      if (group.contributionType == ContributionType.custom)
+                        PopupMenuItem(value: 'set_amount', child: Text(S.t(context, 'monthly_amount'))),
+                      PopupMenuItem(value: 'exit', child: Text(S.t(context, 'exit_group'))),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<double?> _promptAmount(BuildContext context, double initial) async {
+    final ctrl = TextEditingController(text: initial == 0 ? '' : initial.toString());
+    return showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(S.t(context, 'monthly_amount')),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.t(context, 'cancel'))),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(double.tryParse(ctrl.text.trim())),
+            child: Text(S.t(context, 'save')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddMemberDialog extends StatefulWidget {
+  final LandGroup group;
+  final String invitedBy;
+  const _AddMemberDialog({required this.group, required this.invitedBy});
+
+  @override
+  State<_AddMemberDialog> createState() => _AddMemberDialogState();
+}
+
+class _AddMemberDialogState extends State<_AddMemberDialog> {
+  final _queryCtrl = TextEditingController();
+  final _amountCtrl = TextEditingController();
+  GroupRole _role = GroupRole.member;
+  bool _searching = false;
+  String? _error;
+  AppUser? _found;
+
+  Future<void> _search() async {
+    final query = _queryCtrl.text.trim();
+    if (query.isEmpty) return;
+    setState(() {
+      _searching = true;
+      _error = null;
+      _found = null;
+    });
+    final db = FirebaseFirestore.instance;
+    final field = query.contains('@') ? 'email' : 'phone';
+    final snap = await db.collection('users').where(field, isEqualTo: query).limit(1).get();
+    if (snap.docs.isEmpty) {
+      setState(() {
+        _error = 'এই ইউজার এখনো রেজিস্টার করেননি — তাকে আগে অ্যাপে সাইন আপ করতে বলুন';
+        _searching = false;
+      });
+      return;
+    }
+    setState(() {
+      _found = AppUser.fromMap(snap.docs.first.id, snap.docs.first.data());
+      _searching = false;
+    });
+  }
+
+  Future<void> _add() async {
+    if (_found == null) return;
+    await GroupService().addMember(
+      groupId: widget.group.id,
+      uid: _found!.uid,
+      role: _role,
+      customMonthlyAmount: double.tryParse(_amountCtrl.text.trim()) ?? 0,
+      invitedBy: widget.invitedBy,
+    );
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(S.t(context, 'add_member')),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _queryCtrl,
+              decoration: InputDecoration(
+                labelText: S.t(context, 'invite_by_phone_email'),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(icon: const Icon(Icons.search), onPressed: _search),
+              ),
+              onSubmitted: (_) => _search(),
+            ),
+            if (_searching) const Padding(padding: EdgeInsets.all(8), child: LinearProgressIndicator()),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12.5)),
+              ),
+            if (_found != null) ...[
+              const SizedBox(height: 12),
+              Text('পাওয়া গেছে: ${_found!.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              SegmentedButton<GroupRole>(
+                segments: [
+                  ButtonSegment(value: GroupRole.member, label: Text(S.t(context, 'role_member'))),
+                  ButtonSegment(value: GroupRole.admin, label: Text(S.t(context, 'role_admin'))),
+                ],
+                selected: {_role},
+                onSelectionChanged: (s) => setState(() => _role = s.first),
+              ),
+              if (widget.group.contributionType == ContributionType.custom) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _amountCtrl,
+                  decoration:
+                      InputDecoration(labelText: S.t(context, 'monthly_amount'), border: const OutlineInputBorder()),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.t(context, 'cancel'))),
+        FilledButton(onPressed: _found == null ? null : _add, child: Text(S.t(context, 'add_member'))),
+      ],
+    );
+  }
+}
