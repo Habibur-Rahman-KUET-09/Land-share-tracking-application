@@ -44,6 +44,14 @@ class GroupListScreen extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+          // Surface a real Firestore error (most commonly permission-denied
+          // because firestore.rules hasn't been deployed to the console
+          // yet) instead of silently falling through to "no groups" — a
+          // group that failed to load looked exactly like a group that was
+          // never created.
+          if (snapshot.hasError) {
+            return EmptyState(icon: Icons.cloud_off, message: '${snapshot.error}');
+          }
           final groups = snapshot.data ?? [];
           if (groups.isEmpty) {
             return EmptyState(icon: Icons.landscape_outlined, message: S.t(context, 'no_groups'));

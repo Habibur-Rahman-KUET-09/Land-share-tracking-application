@@ -28,6 +28,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   int _dueDay = 5;
   ContributionType _contributionType = ContributionType.equal;
   bool _saving = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -47,7 +48,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   Future<void> _create() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       final uid = context.read<AppAuthProvider>().firebaseUser!.uid;
       final groupId = await GroupService().createGroup(
@@ -64,6 +68,12 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => GroupDetailScreen(groupId: groupId)),
       );
+    } catch (e) {
+      // Without this, a Firestore error (most commonly permission-denied
+      // because firestore.rules hasn't been deployed to the console yet)
+      // silently did nothing: no navigation, no message — it just looked
+      // like the group vanished.
+      if (mounted) setState(() => _error = '$e');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -153,6 +163,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 'প্রতিটি সদস্যের কিস্তির পরিমাণ সদস্য যোগ করার সময় আলাদাভাবে সেট করতে পারবেন।',
                 style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700),
               ),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 16),
+              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ],
             const SizedBox(height: 24),
             FilledButton(

@@ -48,6 +48,26 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
     return StreamBuilder<LandGroup?>(
       stream: _groupService.watchGroup(widget.groupId),
       builder: (context, groupSnap) {
+        // Without this, a Firestore error here (most commonly
+        // permission-denied because firestore.rules hasn't been deployed to
+        // the console yet) left `group` null forever — an infinite loading
+        // spinner with no explanation, right after "successfully" creating
+        // the group.
+        if (groupSnap.hasError) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  '${groupSnap.error}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ),
+          );
+        }
         final group = groupSnap.data;
         if (group == null) {
           return Scaffold(appBar: AppBar(), body: const Center(child: CircularProgressIndicator()));
