@@ -12,6 +12,7 @@ class S {
   static const Map<String, Map<String, String>> _m = {
     'bn': {
       'app_title': 'Kistify',
+      'app_tagline': 'কিস্তি রাখুন গুছিয়ে',
       'login': 'লগইন',
       'register': 'নতুন অ্যাকাউন্ট',
       'name': 'নাম',
@@ -117,6 +118,7 @@ class S {
     },
     'en': {
       'app_title': 'Kistify',
+      'app_tagline': 'Keep your installments organized',
       'login': 'Login',
       'register': 'Create Account',
       'name': 'Name',

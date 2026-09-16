@@ -26,6 +26,15 @@ class GroupListScreen extends StatelessWidget {
     Icons.home_work_outlined,
   ];
 
+  // A little color variety across group cards instead of one flat teal tint.
+  static const _cardColors = [
+    (Color(0xFFE0F2F1), Color(0xFF00695C)), // teal
+    (Color(0xFFFFF3E0), Color(0xFF8A5300)), // amber
+    (Color(0xFFEDE7F6), Color(0xFF4527A0)), // purple
+    (Color(0xFFFCE4EC), Color(0xFFAD1457)), // rose
+    (Color(0xFFE3F2FD), Color(0xFF1565C0)), // blue
+  ];
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AppAuthProvider>();
@@ -89,11 +98,15 @@ class GroupListScreen extends StatelessWidget {
                     side: const BorderSide(color: AppColors.border, width: 0.6),
                   ),
                   child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.background,
-                      foregroundColor: AppColors.primary,
-                      child: Icon(_cardIcons[g.id.hashCode.abs() % _cardIcons.length]),
-                    ),
+                    leading: Builder(builder: (context) {
+                      final i = g.id.hashCode.abs() % _cardColors.length;
+                      final (bg, fg) = _cardColors[i];
+                      return CircleAvatar(
+                        backgroundColor: bg,
+                        foregroundColor: fg,
+                        child: Icon(_cardIcons[i % _cardIcons.length]),
+                      );
+                    }),
                     title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.w500)),
                     subtitle: Text(
                       '${g.landLocation} • ${CurrencyFormatter.format(g.totalLandValue)} • '

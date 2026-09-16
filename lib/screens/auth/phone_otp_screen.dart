@@ -100,7 +100,8 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(24),
-      child: ListView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           TextFormField(
             controller: _phoneCtrl,

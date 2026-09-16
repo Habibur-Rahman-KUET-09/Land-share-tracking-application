@@ -34,6 +34,10 @@ class LandInstallmentApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Kistify',
         theme: buildAppTheme(),
+        // Recent Android targets draw edge-to-edge by default, so content can
+        // sit behind the system nav bar unless explicitly inset — one global
+        // SafeArea here covers every screen instead of patching each one.
+        builder: (context, child) => SafeArea(child: child!),
         home: const AuthGate(),
       ),
     );
