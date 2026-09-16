@@ -20,12 +20,19 @@ class GroupService {
       _groups.doc(groupId).collection('members');
   CollectionReference<Map<String, dynamic>> _planHistory(String groupId) =>
       _groups.doc(groupId).collection('planHistory');
+  CollectionReference<Map<String, dynamic>> _contributions(String groupId) =>
+      _groups.doc(groupId).collection('contributions');
+  CollectionReference<Map<String, dynamic>> _builderPayments(String groupId) =>
+      _groups.doc(groupId).collection('builderPayments');
+  CollectionReference<Map<String, dynamic>> _auditLog(String groupId) =>
+      _groups.doc(groupId).collection('auditLog');
 
   // ---------------------------------------------------------------------
   // Group CRUD
   // ---------------------------------------------------------------------
 
-  /// Creates a new Land Group; the creator becomes its first Admin.
+  /// Creates a new Land Group; the creator gets the [GroupRole.creator] role
+  /// (full group management — the other roles are Admin/Collector/Member).
   Future<String> createGroup({
     required String name,
     required String landLocation,
@@ -49,7 +56,6 @@ class GroupService {
       createdBy: creatorUid,
       createdAt: DateTime.now(),
       memberIds: [creatorUid],
-      adminIds: [creatorUid],
     );
     await ref.set(group.toMap());
     final perMember = contributionType == ContributionType.equal ? monthlyTotalToBuilder : 0.0;
@@ -57,7 +63,7 @@ class GroupService {
           GroupMember(
             uid: creatorUid,
             groupId: ref.id,
-            role: GroupRole.admin,
+            role: GroupRole.creator,
             monthlyAmount: perMember,
             status: MemberStatus.active,
             joinedAt: DateTime.now(),
@@ -144,6 +150,34 @@ class GroupService {
         );
   }
 
+  /// Permanently deletes the group and everything under it (members,
+  /// contributions, builder payments, plan history, audit log). Creator-only
+  /// — enforced both by the caller (GroupManagementScreen only shows this to
+  /// a creator) and by firestore.rules. Firestore doesn't cascade-delete
+  /// subcollections on its own, so each is cleared explicitly first.
+  ///
+  /// [_members] must be cleared LAST: every other subcollection's delete
+  /// rule checks the caller's own role via their members/{uid} doc, so that
+  /// doc (the creator's) has to still exist while those deletes run.
+  Future<void> deleteGroup(String groupId) async {
+    for (final col in [
+      _contributions(groupId),
+      _builderPayments(groupId),
+      _planHistory(groupId),
+      _auditLog(groupId),
+      _members(groupId),
+    ]) {
+      final snap = await col.get();
+      if (snap.docs.isEmpty) continue;
+      final batch = _db.batch();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+    await _groups.doc(groupId).delete();
+  }
+
   // ---------------------------------------------------------------------
   // Members
   // ---------------------------------------------------------------------
@@ -169,6 +203,9 @@ class GroupService {
     double customMonthlyAmount = 0,
     required String invitedBy,
   }) async {
+    if (role == GroupRole.creator) {
+      throw StateError('একটি গ্রুপে একজনই Creator থাকতে পারে');
+    }
     final group = await getGroup(groupId);
     if (group == null) return;
 
@@ -186,7 +223,6 @@ class GroupService {
         );
     await _groups.doc(groupId).update({
       'memberIds': FieldValue.arrayUnion([uid]),
-      if (role == GroupRole.admin) 'adminIds': FieldValue.arrayUnion([uid]),
     });
 
     if (group.contributionType == ContributionType.equal) {
@@ -209,21 +245,38 @@ class GroupService {
     required GroupRole role,
     required String actorId,
   }) async {
-    await _members(groupId).doc(uid).update({'role': role == GroupRole.admin ? 'admin' : 'member'});
-    await _groups.doc(groupId).update({
-      'adminIds': role == GroupRole.admin ? FieldValue.arrayUnion([uid]) : FieldValue.arrayRemove([uid]),
-    });
+    final current = await getMember(groupId, uid);
+    if (current?.isCreator ?? false) {
+      throw StateError('Creator এর ভূমিকা পরিবর্তন করা যাবে না');
+    }
+    if (role == GroupRole.creator) {
+      throw StateError('একটি গ্রুপে একজনই Creator থাকতে পারে');
+    }
+    await _members(groupId).doc(uid).update({'role': groupRoleToString(role)});
     await _audit.log(
       groupId: groupId,
       actorId: actorId,
       action: 'update_role',
       targetType: 'member',
       targetId: uid,
-      details: role == GroupRole.admin ? 'Admin করা হয়েছে' : 'Member করা হয়েছে',
+      details: '${_roleLabelBn(role)} করা হয়েছে',
     );
   }
 
-  /// FR 2.2: custom-mode per-member amount, set directly by an Admin.
+  static String _roleLabelBn(GroupRole role) {
+    switch (role) {
+      case GroupRole.creator:
+        return 'Creator';
+      case GroupRole.admin:
+        return 'Admin';
+      case GroupRole.collector:
+        return 'Collector';
+      case GroupRole.member:
+        return 'Member';
+    }
+  }
+
+  /// FR 2.2: custom-mode per-member amount, set directly by the Creator.
   Future<void> updateMemberAmount({
     required String groupId,
     required String uid,
@@ -247,13 +300,14 @@ class GroupService {
   Future<void> exitMember({required String groupId, required String uid, required String actorId}) async {
     final group = await getGroup(groupId);
     if (group == null) return;
+    final current = await getMember(groupId, uid);
+    if (current?.isCreator ?? false) {
+      throw StateError('Creator কে গ্রুপ থেকে বের করা যাবে না — পুরো গ্রুপ delete করতে হবে');
+    }
 
     await _members(groupId).doc(uid).update({
       'status': 'exited',
       'exitedAt': Timestamp.now(),
-    });
-    await _groups.doc(groupId).update({
-      'adminIds': FieldValue.arrayRemove([uid]),
     });
 
     if (group.contributionType == ContributionType.equal) {

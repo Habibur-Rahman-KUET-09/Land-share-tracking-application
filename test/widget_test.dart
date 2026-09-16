@@ -30,7 +30,6 @@ void main() {
       createdBy: 'u1',
       createdAt: DateTime(2026, 1, 1),
       memberIds: const ['u1', 'u2', 'u3'],
-      adminIds: const ['u1'],
     );
     final member = GroupMember(
       uid: 'u2',
@@ -134,6 +133,34 @@ void main() {
           submittedBy: 'u2',
           submittedAt: DateTime(2026, 9, 2),
           rejectReason: 'রিসিট অস্পষ্ট',
+        ),
+      ];
+      final status = computeMemberMonthStatus(
+        member: member,
+        group: group,
+        allContributionsForMember: entries,
+        month: 9,
+        year: 2026,
+      );
+      expect(status.paidAmount, 0);
+      expect(status.dueAmount, 10000);
+    });
+
+    test('a cancelled entry never counts toward paidAmount', () {
+      final entries = [
+        Contribution(
+          id: 'c1',
+          groupId: 'g1',
+          memberId: 'u2',
+          month: 9,
+          year: 2026,
+          amount: 10000,
+          method: PaymentMethod.bkash,
+          receiptUrl: 'r1',
+          status: ContributionStatus.cancelled,
+          submittedBy: 'u2',
+          submittedAt: DateTime(2026, 9, 2),
+          cancelReason: 'ভুলবশত অনুমোদিত হয়েছিল',
         ),
       ];
       final status = computeMemberMonthStatus(

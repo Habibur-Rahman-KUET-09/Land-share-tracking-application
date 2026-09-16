@@ -12,7 +12,7 @@ import '../contribution/contributions_tab.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../reports/reports_screen.dart';
 import '../transparency/transparency_screen.dart';
-import 'edit_plan_screen.dart';
+import 'group_management_screen.dart';
 import 'members_tab.dart';
 
 /// The group's hub: Dashboard, Members, Contributions, Builder Payments,
@@ -76,17 +76,22 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
           future: _groupService.getMember(widget.groupId, uid),
           builder: (context, memberSnap) {
             final me = memberSnap.data;
-            final isAdmin = me?.isAdmin ?? false;
+            final canManageGroup = me?.canManageGroup ?? false;
+            final canApprove = me?.canApproveOrRejectContribution ?? false;
+            final canCancel = me?.canCancelApprovedContribution ?? false;
+            final canRecordPayment = me?.canRecordBuilderPayment ?? false;
+            final canViewReports = me?.canDownloadReports ?? false;
+            final canViewAudit = me?.canViewAuditLog ?? false;
             return Scaffold(
               appBar: AppBar(
                 title: Text(group.name),
                 actions: [
-                  if (isAdmin)
+                  if (canManageGroup)
                     IconButton(
-                      tooltip: S.t(context, 'edit_plan'),
+                      tooltip: S.t(context, 'group_management'),
                       icon: const Icon(Icons.tune),
                       onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => EditPlanScreen(group: group)),
+                        MaterialPageRoute(builder: (_) => GroupManagementScreen(group: group)),
                       ),
                     ),
                 ],
@@ -108,12 +113,17 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                 controller: _tabController,
                 children: [
                   DashboardScreen(group: group, currentUid: uid),
-                  MembersTab(group: group, isAdmin: isAdmin, currentUid: uid),
-                  ContributionsTab(group: group, isAdmin: isAdmin, currentUid: uid),
-                  BuilderPaymentScreen(group: group, isAdmin: isAdmin),
-                  ReportsScreen(group: group),
+                  MembersTab(group: group, canManage: canManageGroup, currentUid: uid),
+                  ContributionsTab(
+                    group: group,
+                    canApprove: canApprove,
+                    canCancel: canCancel,
+                    currentUid: uid,
+                  ),
+                  BuilderPaymentScreen(group: group, canRecord: canRecordPayment),
+                  ReportsScreen(group: group, canView: canViewReports),
                   TransparencyScreen(group: group),
-                  AuditLogScreen(groupId: group.id),
+                  AuditLogScreen(groupId: group.id, canView: canViewAudit),
                 ],
               ),
             );

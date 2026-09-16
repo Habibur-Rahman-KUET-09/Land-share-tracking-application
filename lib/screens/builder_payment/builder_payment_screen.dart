@@ -17,8 +17,8 @@ import '../../widgets/empty_state.dart';
 /// FR 2.4: what an Admin actually remitted to the land's builder/developer.
 class BuilderPaymentScreen extends StatelessWidget {
   final LandGroup group;
-  final bool isAdmin;
-  const BuilderPaymentScreen({super.key, required this.group, required this.isAdmin});
+  final bool canRecord;
+  const BuilderPaymentScreen({super.key, required this.group, required this.canRecord});
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +82,7 @@ class BuilderPaymentScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: isAdmin
+      floatingActionButton: canRecord
           ? FloatingActionButton.extended(
               onPressed: () => showDialog(context: context, builder: (_) => _RecordPaymentDialog(group: group)),
               icon: const Icon(Icons.add),

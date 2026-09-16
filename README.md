@@ -6,16 +6,22 @@ Storage, Cloud Messaging, Cloud Functions)।
 
 ## মূল ফিচার
 
-- **User & Group Management** — ফোন নম্বর বা ইমেইল দিয়ে লগইন/রেজিস্ট্রেশন;
-  একটি "Land Group" এ একাধিক Admin/Collector ও Member।
+- **User & Group Management** — ফোন নম্বর, ইমেইল, বা Google দিয়ে
+  লগইন/রেজিস্ট্রেশন; একটি "Land Group" এ চারটি ভূমিকা:
+  - **Creator** — পুরো গ্রুপ ম্যানেজমেন্ট (প্ল্যান এডিট, সদস্য
+    যোগ/রোল পরিবর্তন, গ্রুপ ডিলিট) + বাকি সব রোলের ক্ষমতা।
+  - **Admin** — এন্ট্রি অনুমোদন/বাতিল করা, রিপোর্ট ডাউনলোড, অ্যাক্টিভিটি লগ।
+  - **Collector** — এন্ট্রি অনুমোদন/প্রত্যাখ্যান, বিল্ডারকে জমা দেওয়া।
+  - **Member** — নিজের এন্ট্রি জমা দেওয়া (এন্ট্রির status সবাই দেখতে পারে)।
 - **Installment Plan Setup** — মোট জমির মূল্য, মোট কিস্তি সংখ্যা, প্রতি
   মাসে বিল্ডারকে কত দিতে হবে, due date, এবং কন্ট্রিবিউশন সমান/আলাদা কিনা —
   সব পরিবর্তনযোগ্য, প্রতিটি পরিবর্তনের history থাকে।
 - **Monthly Contribution Collection** — Member নিজেই "Paid" এন্ট্রি দেয়
-  (রিসিট বাধ্যতামূলক), অন্য কোনো Admin সেটা Approve/Reject করে
-  (**Maker-Checker** — কেউ নিজের এন্ট্রি নিজে অনুমোদন করতে পারবে না)।
-- **Builder Payment Tracking** — Admin বিল্ডারকে কত টাকা কবে জমা দিলো তার
-  লেজার, সংগৃহীত বনাম জমাকৃতের হিসাব।
+  (রিসিট ছবি ঐচ্ছিক), অন্য কোনো Admin/Collector সেটা Approve/Reject করে
+  (**Maker-Checker** — কেউ নিজের এন্ট্রি নিজে অনুমোদন করতে পারবে না); একটি
+  অনুমোদিত এন্ট্রি পরে Admin/Creator বাতিল (cancel) করতে পারে।
+- **Builder Payment Tracking** — Collector/Creator বিল্ডারকে কত টাকা কবে
+  জমা দিলো তার লেজার (রিসিট এখানেও ঐচ্ছিক), সংগৃহীত বনাম জমাকৃতের হিসাব।
 - **Dashboard, Reports (PDF/Excel), Transparency ledger, Audit log,
   Notifications** — বাকিটা `lib/screens/` এর প্রতিটি ফোল্ডার FRD এর একটা
   সেকশনের সাথে মেলে (নিচের "প্রজেক্ট গঠন" দেখুন)।

@@ -13,13 +13,15 @@ import '../../services/excel_export_service.dart';
 import '../../services/group_service.dart';
 import '../../services/pdf_export_service.dart';
 import '../../utils/currency_formatter.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/member_name.dart';
 
 /// FR 2.7 (Reports & History): individual payment history + PDF/Excel
-/// export of the whole group's report.
+/// export of the whole group's report. Admin/Creator only.
 class ReportsScreen extends StatefulWidget {
   final LandGroup group;
-  const ReportsScreen({super.key, required this.group});
+  final bool canView;
+  const ReportsScreen({super.key, required this.group, required this.canView});
 
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
@@ -73,6 +75,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.canView) {
+      return EmptyState(icon: Icons.lock_outline, message: S.t(context, 'no_permission'));
+    }
     return StreamBuilder<List<GroupMember>>(
       stream: GroupService().watchMembers(widget.group.id),
       builder: (context, memberSnap) {
@@ -181,6 +186,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return 'approved';
       case ContributionStatus.rejected:
         return 'rejected';
+      case ContributionStatus.cancelled:
+        return 'cancelled';
       case ContributionStatus.pendingConfirmation:
         return 'pending';
     }

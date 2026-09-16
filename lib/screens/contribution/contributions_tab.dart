@@ -18,13 +18,20 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/status_chip.dart';
 
 /// FR 2.3 (Monthly Contribution Collection) + Finalized Decisions 2 & 3:
-/// members submit "Paid" entries here, and — for Admins — this is also
-/// where the Maker-Checker approval queue lives.
+/// members submit "Paid" entries here, and — for Admin/Collector/Creator —
+/// this is also where the Maker-Checker approval queue lives.
 class ContributionsTab extends StatefulWidget {
   final LandGroup group;
-  final bool isAdmin;
+  final bool canApprove;
+  final bool canCancel;
   final String currentUid;
-  const ContributionsTab({super.key, required this.group, required this.isAdmin, required this.currentUid});
+  const ContributionsTab({
+    super.key,
+    required this.group,
+    required this.canApprove,
+    required this.canCancel,
+    required this.currentUid,
+  });
 
   @override
   State<ContributionsTab> createState() => _ContributionsTabState();
@@ -38,7 +45,7 @@ class _ContributionsTabState extends State<ContributionsTab> {
     return Scaffold(
       body: Column(
         children: [
-          if (widget.isAdmin)
+          if (widget.canApprove)
             Padding(
               padding: const EdgeInsets.all(12),
               child: SegmentedButton<bool>(
@@ -53,7 +60,7 @@ class _ContributionsTabState extends State<ContributionsTab> {
           Expanded(
             child: _showApprovals
                 ? _ApprovalsList(group: widget.group, currentUid: widget.currentUid)
-                : _MyContributions(group: widget.group, currentUid: widget.currentUid),
+                : _MyContributions(group: widget.group, currentUid: widget.currentUid, canCancel: widget.canCancel),
           ),
         ],
       ),
@@ -74,7 +81,8 @@ class _ContributionsTabState extends State<ContributionsTab> {
 class _MyContributions extends StatelessWidget {
   final LandGroup group;
   final String currentUid;
-  const _MyContributions({required this.group, required this.currentUid});
+  final bool canCancel;
+  const _MyContributions({required this.group, required this.currentUid, required this.canCancel});
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +106,33 @@ class _MyContributions extends StatelessWidget {
               child: ListTile(
                 title: Text('${c.month}/${c.year} — ${CurrencyFormatter.format(c.amount)}'),
                 subtitle: Text(S.t(context, 'method_${c.method.name}')),
-                trailing: _StatusChipFor(status: c.status, rejectReason: c.rejectReason),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _StatusChipFor(status: c.status, rejectReason: c.rejectReason, cancelReason: c.cancelReason),
+                    if (canCancel && c.status == ContributionStatus.approved)
+                      IconButton(
+                        icon: const Icon(Icons.cancel_outlined),
+                        tooltip: S.t(context, 'cancel_entry'),
+                        onPressed: () async {
+                          final reason = await showTextInputDialog(context, title: S.t(context, 'cancel_reason'));
+                          if (reason == null || reason.isEmpty) return;
+                          try {
+                            await ContributionService().cancel(
+                              groupId: group.id,
+                              contributionId: c.id,
+                              cancelledBy: currentUid,
+                              reason: reason,
+                            );
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                            }
+                          }
+                        },
+                      ),
+                  ],
+                ),
               ),
             );
           },
@@ -160,7 +194,7 @@ class _ApprovalsList extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          'নিজের জমা দেওয়া এন্ট্রি — অন্য একজন Admin কে অনুমোদন করতে হবে',
+                          'নিজের জমা দেওয়া এন্ট্রি — অন্য একজন Admin/Collector কে অনুমোদন করতে হবে',
                           style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
                         ),
                       )
@@ -222,7 +256,8 @@ class _ApprovalsList extends StatelessWidget {
 class _StatusChipFor extends StatelessWidget {
   final ContributionStatus status;
   final String? rejectReason;
-  const _StatusChipFor({required this.status, this.rejectReason});
+  final String? cancelReason;
+  const _StatusChipFor({required this.status, this.rejectReason, this.cancelReason});
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +268,11 @@ class _StatusChipFor extends StatelessWidget {
         return Tooltip(
           message: rejectReason ?? '',
           child: StatusChip(label: S.t(context, 'status_rejected'), color: Colors.red),
+        );
+      case ContributionStatus.cancelled:
+        return Tooltip(
+          message: cancelReason ?? '',
+          child: StatusChip(label: S.t(context, 'status_cancelled'), color: Colors.grey),
         );
       case ContributionStatus.pendingConfirmation:
         return StatusChip(label: S.t(context, 'status_pending'), color: Colors.orange);
@@ -280,20 +320,20 @@ class _SubmitContributionDialogState extends State<_SubmitContributionDialog> {
       setState(() => _error = S.t(context, 'invalid_number'));
       return;
     }
-    if (_receiptFile == null) {
-      setState(() => _error = S.t(context, 'receipt_required'));
-      return;
-    }
     setState(() {
       _saving = true;
       _error = null;
     });
     try {
-      final receiptUrl = await StorageService().uploadReceipt(
-        groupId: widget.group.id,
-        uploaderUid: widget.memberId,
-        file: _receiptFile!,
-      );
+      // Receipt photo is optional — upload one only if the member chose to.
+      String? receiptUrl;
+      if (_receiptFile != null) {
+        receiptUrl = await StorageService().uploadReceipt(
+          groupId: widget.group.id,
+          uploaderUid: widget.memberId,
+          file: _receiptFile!,
+        );
+      }
       await ContributionService().submit(
         groupId: widget.group.id,
         memberId: widget.memberId,
@@ -366,7 +406,9 @@ class _SubmitContributionDialogState extends State<_SubmitContributionDialog> {
             OutlinedButton.icon(
               onPressed: _pickReceipt,
               icon: const Icon(Icons.upload_file),
-              label: Text(_receiptFile == null ? S.t(context, 'upload_receipt') : 'রিসিট নির্বাচিত হয়েছে ✓'),
+              label: Text(
+                _receiptFile == null ? '${S.t(context, 'upload_receipt')} (ঐচ্ছিক)' : 'রিসিট নির্বাচিত হয়েছে ✓',
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),

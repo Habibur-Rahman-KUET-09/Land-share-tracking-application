@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// FR 2.3 / Finalized Decision 3: Member submits -> "Pending Confirmation"
-/// -> an Admin (never the submitter themselves — Maker-Checker) Approves or
-/// Rejects (with a reason, FR 7 "Reject with Reason").
-enum ContributionStatus { pendingConfirmation, approved, rejected }
+/// -> an Admin/Collector (never the submitter themselves — Maker-Checker)
+/// Approves or Rejects (with a reason, FR 7 "Reject with Reason"). An Admin
+/// (or the Creator) may later void an already-approved entry — [cancelled].
+enum ContributionStatus { pendingConfirmation, approved, rejected, cancelled }
 
 ContributionStatus contributionStatusFromString(String? v) {
   switch (v) {
@@ -11,6 +12,8 @@ ContributionStatus contributionStatusFromString(String? v) {
       return ContributionStatus.approved;
     case 'rejected':
       return ContributionStatus.rejected;
+    case 'cancelled':
+      return ContributionStatus.cancelled;
     default:
       return ContributionStatus.pendingConfirmation;
   }
@@ -35,8 +38,8 @@ PaymentMethod paymentMethodFromString(String? v) {
 ///
 /// One member can have multiple entries in the same month (FR "Partial
 /// payment support" — e.g. two part-payments); the month's total paid is the
-/// sum of that member+month's APPROVED entries. [receiptUrl] is mandatory
-/// before an Admin may approve (FR 7 "Payment Proof Upload (Mandatory)").
+/// sum of that member+month's APPROVED entries. [receiptUrl] is optional —
+/// a submission doesn't require photo proof, though one can be attached.
 class Contribution {
   final String id;
   final String groupId;
@@ -52,6 +55,9 @@ class Contribution {
   final String? approvedBy;
   final DateTime? approvedAt;
   final String? rejectReason;
+  final String? cancelledBy;
+  final DateTime? cancelledAt;
+  final String? cancelReason;
 
   const Contribution({
     required this.id,
@@ -68,6 +74,9 @@ class Contribution {
     this.approvedBy,
     this.approvedAt,
     this.rejectReason,
+    this.cancelledBy,
+    this.cancelledAt,
+    this.cancelReason,
   });
 
   /// FR 7 "Late Payment Tracking" — approved after the group's due date for
@@ -86,12 +95,15 @@ class Contribution {
       'amount': amount,
       'method': method.name,
       'receiptUrl': receiptUrl,
-      'status': status.name == 'pendingConfirmation' ? 'pendingConfirmation' : status.name,
+      'status': status.name,
       'submittedBy': submittedBy,
       'submittedAt': Timestamp.fromDate(submittedAt),
       'approvedBy': approvedBy,
       'approvedAt': approvedAt == null ? null : Timestamp.fromDate(approvedAt!),
       'rejectReason': rejectReason,
+      'cancelledBy': cancelledBy,
+      'cancelledAt': cancelledAt == null ? null : Timestamp.fromDate(cancelledAt!),
+      'cancelReason': cancelReason,
     };
   }
 
@@ -111,6 +123,9 @@ class Contribution {
       approvedBy: map['approvedBy'] as String?,
       approvedAt: (map['approvedAt'] as Timestamp?)?.toDate(),
       rejectReason: map['rejectReason'] as String?,
+      cancelledBy: map['cancelledBy'] as String?,
+      cancelledAt: (map['cancelledAt'] as Timestamp?)?.toDate(),
+      cancelReason: map['cancelReason'] as String?,
     );
   }
 }

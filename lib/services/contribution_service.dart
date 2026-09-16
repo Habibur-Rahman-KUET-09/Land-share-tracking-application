@@ -16,9 +16,7 @@ class ContributionService {
   CollectionReference<Map<String, dynamic>> _col(String groupId) =>
       _db.collection('groups').doc(groupId).collection('contributions');
 
-  /// FR 7 "Payment Proof Upload (Mandatory)" is enforced by the UI requiring
-  /// a receipt before this is called for anything past "pending" — but the
-  /// receipt itself is attached here since it's captured at submission time.
+  /// [receiptUrl] is optional — a member can submit without a photo receipt.
   Future<String> submit({
     required String groupId,
     required String memberId,
@@ -56,8 +54,8 @@ class ContributionService {
   }
 
   /// Maker-Checker guard: throws if [approverId] is the same person who
-  /// submitted the entry (or the member it's for) — a different Admin must
-  /// confirm it. Also refuses to approve without a receipt (FR 7).
+  /// submitted the entry (or the member it's for) — a different Admin or
+  /// Collector must confirm it. A receipt is not required.
   Future<void> approve({
     required String groupId,
     required String contributionId,
@@ -69,10 +67,7 @@ class ContributionService {
     final contribution = Contribution.fromMap(groupId, contributionId, snap.data()!);
 
     if (contribution.submittedBy == approverId || contribution.memberId == approverId) {
-      throw StateError('নিজের জমা দেওয়া এন্ট্রি নিজে অনুমোদন করা যাবে না — অন্য একজন Admin কে অনুমোদন করতে হবে');
-    }
-    if (contribution.receiptUrl == null || contribution.receiptUrl!.isEmpty) {
-      throw StateError('রিসিট/প্রমাণ ছাড়া অনুমোদন করা যাবে না');
+      throw StateError('নিজের জমা দেওয়া এন্ট্রি নিজে অনুমোদন করা যাবে না — অন্য একজন Admin/Collector কে অনুমোদন করতে হবে');
     }
     if (contribution.status != ContributionStatus.pendingConfirmation) {
       throw StateError('এই এন্ট্রি ইতিমধ্যে প্রসেস হয়ে গেছে');
@@ -125,6 +120,43 @@ class ContributionService {
       targetType: 'contribution',
       targetId: contributionId,
       details: 'প্রত্যাখ্যানের কারণ: ${reason.trim()}',
+    );
+  }
+
+  /// Voids an already-approved entry (Admin/Creator only — enforced by
+  /// firestore.rules). Distinct from [reject]: reject only applies to a
+  /// still-pending entry; this reverses a decision that already happened.
+  Future<void> cancel({
+    required String groupId,
+    required String contributionId,
+    required String cancelledBy,
+    required String reason,
+  }) async {
+    final ref = _col(groupId).doc(contributionId);
+    final snap = await ref.get();
+    if (!snap.exists) throw StateError('এন্ট্রি খুঁজে পাওয়া যায়নি');
+    final contribution = Contribution.fromMap(groupId, contributionId, snap.data()!);
+
+    if (contribution.status != ContributionStatus.approved) {
+      throw StateError('শুধু অনুমোদিত এন্ট্রি বাতিল করা যাবে');
+    }
+    if (reason.trim().isEmpty) {
+      throw StateError('বাতিলের কারণ লিখতে হবে');
+    }
+
+    await ref.update({
+      'status': 'cancelled',
+      'cancelledBy': cancelledBy,
+      'cancelledAt': Timestamp.now(),
+      'cancelReason': reason.trim(),
+    });
+    await _audit.log(
+      groupId: groupId,
+      actorId: cancelledBy,
+      action: 'cancel_contribution',
+      targetType: 'contribution',
+      targetId: contributionId,
+      details: 'বাতিলের কারণ: ${reason.trim()}',
     );
   }
 

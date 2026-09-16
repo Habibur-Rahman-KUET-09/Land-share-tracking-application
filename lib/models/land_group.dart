@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// FR 2.2: Flexible contribution — সবাই সমান (equal) নাকি প্রতিটি সদস্যের
-/// জন্য আলাদা amount (custom), Admin এটা group creation/edit-এ টগল করে।
+/// জন্য আলাদা amount (custom), Creator এটা group creation/edit-এ টগল করে।
 enum ContributionType { equal, custom }
 
 ContributionType contributionTypeFromString(String? v) =>
@@ -9,6 +9,12 @@ ContributionType contributionTypeFromString(String? v) =>
 
 /// A "Land Group" (groups/{id}) — one jointly-purchased land, its
 /// installment plan, and the friends sharing it.
+///
+/// Per-member permissions (manage group, approve entries, record builder
+/// payments, ...) come from each member's own role field in the `members`
+/// subcollection (see [GroupMember]) — not tracked redundantly here.
+/// [memberIds] stays denormalized on the group doc only because it's what
+/// GroupListScreen's "my groups" query filters on.
 class LandGroup {
   final String id;
   final String name;
@@ -21,7 +27,6 @@ class LandGroup {
   final String createdBy;
   final DateTime createdAt;
   final List<String> memberIds;
-  final List<String> adminIds;
 
   const LandGroup({
     required this.id,
@@ -35,7 +40,6 @@ class LandGroup {
     required this.createdBy,
     required this.createdAt,
     required this.memberIds,
-    required this.adminIds,
   });
 
   LandGroup copyWith({
@@ -47,7 +51,6 @@ class LandGroup {
     int? dueDayOfMonth,
     ContributionType? contributionType,
     List<String>? memberIds,
-    List<String>? adminIds,
   }) {
     return LandGroup(
       id: id,
@@ -61,7 +64,6 @@ class LandGroup {
       createdBy: createdBy,
       createdAt: createdAt,
       memberIds: memberIds ?? this.memberIds,
-      adminIds: adminIds ?? this.adminIds,
     );
   }
 
@@ -77,7 +79,6 @@ class LandGroup {
       'createdBy': createdBy,
       'createdAt': Timestamp.fromDate(createdAt),
       'memberIds': memberIds,
-      'adminIds': adminIds,
     };
   }
 
@@ -94,7 +95,6 @@ class LandGroup {
       createdBy: (map['createdBy'] as String?) ?? '',
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       memberIds: List<String>.from((map['memberIds'] as List?) ?? const []),
-      adminIds: List<String>.from((map['adminIds'] as List?) ?? const []),
     );
   }
 }

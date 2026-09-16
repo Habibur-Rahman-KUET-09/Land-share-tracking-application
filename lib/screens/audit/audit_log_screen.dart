@@ -6,11 +6,11 @@ import '../../services/audit_service.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/member_name.dart';
 
-/// FR 7 "Audit Trail/Activity Log" — visible to everyone in the group
-/// (transparency), append-only.
+/// FR 7 "Audit Trail/Activity Log" — Admin/Creator only, append-only.
 class AuditLogScreen extends StatelessWidget {
   final String groupId;
-  const AuditLogScreen({super.key, required this.groupId});
+  final bool canView;
+  const AuditLogScreen({super.key, required this.groupId, required this.canView});
 
   static const _actionLabelsBn = {
     'create_group': 'গ্রুপ তৈরি',
@@ -22,11 +22,15 @@ class AuditLogScreen extends StatelessWidget {
     'submit_contribution': 'কিস্তি এন্ট্রি জমা',
     'approve_contribution': 'কিস্তি অনুমোদন',
     'reject_contribution': 'কিস্তি প্রত্যাখ্যান',
+    'cancel_contribution': 'কিস্তি বাতিল',
     'record_builder_payment': 'বিল্ডারকে জমার এন্ট্রি',
   };
 
   @override
   Widget build(BuildContext context) {
+    if (!canView) {
+      return EmptyState(icon: Icons.lock_outline, message: S.t(context, 'no_permission'));
+    }
     return StreamBuilder<List<AuditLogEntry>>(
       stream: AuditService().watch(groupId),
       builder: (context, snapshot) {

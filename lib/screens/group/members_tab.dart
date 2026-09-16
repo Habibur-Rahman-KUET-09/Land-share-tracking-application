@@ -19,9 +19,9 @@ import '../../widgets/status_chip.dart';
 /// added.
 class MembersTab extends StatelessWidget {
   final LandGroup group;
-  final bool isAdmin;
+  final bool canManage;
   final String currentUid;
-  const MembersTab({super.key, required this.group, required this.isAdmin, required this.currentUid});
+  const MembersTab({super.key, required this.group, required this.canManage, required this.currentUid});
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +39,7 @@ class MembersTab extends StatelessWidget {
               ...active.map((m) => _MemberTile(
                     group: group,
                     member: m,
-                    isAdmin: isAdmin,
+                    canManage: canManage,
                     currentUid: currentUid,
                   )),
               if (exited.isNotEmpty) ...[
@@ -50,7 +50,7 @@ class MembersTab extends StatelessWidget {
                 ...exited.map((m) => _MemberTile(
                       group: group,
                       member: m,
-                      isAdmin: isAdmin,
+                      canManage: canManage,
                       currentUid: currentUid,
                     )),
               ],
@@ -58,7 +58,7 @@ class MembersTab extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: isAdmin
+      floatingActionButton: canManage
           ? FloatingActionButton.extended(
               onPressed: () => showDialog(
                 context: context,
@@ -72,12 +72,38 @@ class MembersTab extends StatelessWidget {
   }
 }
 
+Color _roleColor(GroupRole role) {
+  switch (role) {
+    case GroupRole.creator:
+      return Colors.deepPurple;
+    case GroupRole.admin:
+      return Colors.indigo;
+    case GroupRole.collector:
+      return Colors.teal;
+    case GroupRole.member:
+      return Colors.blueGrey;
+  }
+}
+
+String _roleKey(GroupRole role) {
+  switch (role) {
+    case GroupRole.creator:
+      return 'role_creator';
+    case GroupRole.admin:
+      return 'role_admin';
+    case GroupRole.collector:
+      return 'role_collector';
+    case GroupRole.member:
+      return 'role_member';
+  }
+}
+
 class _MemberTile extends StatelessWidget {
   final LandGroup group;
   final GroupMember member;
-  final bool isAdmin;
+  final bool canManage;
   final String currentUid;
-  const _MemberTile({required this.group, required this.member, required this.isAdmin, required this.currentUid});
+  const _MemberTile({required this.group, required this.member, required this.canManage, required this.currentUid});
 
   @override
   Widget build(BuildContext context) {
@@ -98,21 +124,27 @@ class _MemberTile extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                StatusChip(
-                  label: S.t(context, member.isAdmin ? 'role_admin' : 'role_member'),
-                  color: member.isAdmin ? Colors.indigo : Colors.blueGrey,
-                ),
-                if (isAdmin && member.isActive)
+                StatusChip(label: S.t(context, _roleKey(member.role)), color: _roleColor(member.role)),
+                // The creator's own role/removal is never editable — group
+                // deletion (GroupManagementScreen) is the only way to undo it.
+                if (canManage && member.isActive && !member.isCreator)
                   PopupMenuButton<String>(
                     onSelected: (v) async {
                       final groupService = GroupService();
-                      if (v == 'toggle_role') {
-                        await groupService.updateMemberRole(
-                          groupId: group.id,
-                          uid: member.uid,
-                          role: member.isAdmin ? GroupRole.member : GroupRole.admin,
-                          actorId: currentUid,
-                        );
+                      if (v.startsWith('role_')) {
+                        final role = GroupRole.values.firstWhere((r) => 'role_${r.name}' == v);
+                        try {
+                          await groupService.updateMemberRole(
+                            groupId: group.id,
+                            uid: member.uid,
+                            role: role,
+                            actorId: currentUid,
+                          );
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                          }
+                        }
                       } else if (v == 'set_amount' && group.contributionType == ContributionType.custom) {
                         final amount = await _promptAmount(context, member.monthlyAmount);
                         if (amount != null) {
@@ -137,7 +169,9 @@ class _MemberTile extends StatelessWidget {
                       }
                     },
                     itemBuilder: (context) => [
-                      PopupMenuItem(value: 'toggle_role', child: Text(member.isAdmin ? 'Member করুন' : 'Admin করুন')),
+                      for (final role in [GroupRole.admin, GroupRole.collector, GroupRole.member])
+                        if (role != member.role)
+                          PopupMenuItem(value: 'role_${role.name}', child: Text('${S.t(context, _roleKey(role))} করুন')),
                       if (group.contributionType == ContributionType.custom)
                         PopupMenuItem(value: 'set_amount', child: Text(S.t(context, 'monthly_amount'))),
                       PopupMenuItem(value: 'exit', child: Text(S.t(context, 'exit_group'))),
@@ -260,6 +294,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                 segments: [
                   ButtonSegment(value: GroupRole.member, label: Text(S.t(context, 'role_member'))),
                   ButtonSegment(value: GroupRole.admin, label: Text(S.t(context, 'role_admin'))),
+                  ButtonSegment(value: GroupRole.collector, label: Text(S.t(context, 'role_collector'))),
                 ],
                 selected: {_role},
                 onSelectionChanged: (s) => setState(() => _role = s.first),
