@@ -1,0 +1,41 @@
+name: Deploy Functions
+
+# Ships functions/ (notification/reminder Cloud Functions) to Firebase
+# automatically whenever it changes on main — so this never needs a manual
+# `firebase deploy --only functions` from someone's machine again.
+#
+# One-time setup (see functions/README-deploy.md for the full walkthrough):
+#   1. Generate a CI token: `npx firebase-tools login:ci` (from Google Cloud
+#      Shell or any machine — opens a browser to approve, then prints a token).
+#   2. Add two repository secrets (Settings → Secrets and variables →
+#      Actions → New repository secret):
+#        FIREBASE_TOKEN        — the token from step 1
+#        FIREBASE_PROJECT_ID   — the Firebase project ID (Firebase Console →
+#                                 Project settings → Project ID)
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - 'functions/**'
+      - '.github/workflows/deploy-functions.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm install
+        working-directory: functions
+
+      - run: npx firebase-tools deploy --only functions --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN" --non-interactive
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
