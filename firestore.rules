@@ -46,13 +46,20 @@ service cloud.firestore {
     // groups/{groupId}
     // ---------------------------------------------------------------
     match /groups/{groupId} {
-      allow read: if isGroupMember(groupId);
+      // Read directly off resource.data instead of the isGroupMember()
+      // get()-based helper: for a *list* query (watchUserGroups), Firestore
+      // must prove from the rule alone that every possible match is
+      // readable, and a rule that re-fetches the same document via get()
+      // isn't guaranteed to satisfy that check the way a direct
+      // resource.data read does — this was silently blocking
+      // "my groups" list reads even though group creation itself succeeded.
+      allow read: if isSignedIn() && request.auth.uid in resource.data.memberIds;
       // Creation: the creator must be listing themselves as the sole
       // member+admin at create time (matches GroupService.createGroup).
       allow create: if isSignedIn() &&
         request.auth.uid in request.resource.data.memberIds &&
         request.auth.uid in request.resource.data.adminIds;
-      allow update: if isGroupAdmin(groupId);
+      allow update: if isSignedIn() && request.auth.uid in resource.data.adminIds;
       allow delete: if false;
 
       match /members/{memberUid} {
