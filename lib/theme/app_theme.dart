@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Kistify's visual identity — teal accent, navy text, soft off-white
 /// background, flat white cards. Colors extracted from the design mockups
@@ -82,6 +83,15 @@ ThemeData buildAppTheme() {
       centerTitle: false,
       titleTextStyle: TextStyle(color: AppColors.heading, fontSize: 17, fontWeight: FontWeight.w500),
       iconTheme: IconThemeData(color: AppColors.heading),
+      // Explicit instead of relying on AppBar's brightness-based default —
+      // pins the status bar to the same off-white as the header itself and
+      // dark icons/text so it reads as one continuous branded bar, on every
+      // screen, instead of occasionally falling back to a plain black strip.
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: AppColors.background,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
     ),
     cardTheme: CardThemeData(
       color: AppColors.surface,

@@ -12,6 +12,7 @@ import '../contribution/contributions_tab.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../reports/reports_screen.dart';
 import '../transparency/transparency_screen.dart';
+import '../../widgets/kistify_app_bar.dart';
 import 'group_management_screen.dart';
 import 'members_tab.dart';
 
@@ -83,8 +84,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
             final canViewReports = me?.canDownloadReports ?? false;
             final canViewAudit = me?.canViewAuditLog ?? false;
             return Scaffold(
-              appBar: AppBar(
-                title: Text(group.name),
+              appBar: KistifyAppBar(
+                title: group.name,
                 actions: [
                   if (canManageGroup)
                     IconButton(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/kistify_app_bar.dart';
 import 'phone_otp_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -53,7 +54,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(S.t(context, 'register'))),
+      appBar: KistifyAppBar(title: S.t(context, 'register')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: ListView(

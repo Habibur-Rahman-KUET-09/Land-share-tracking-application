@@ -5,6 +5,7 @@ import '../../models/land_group.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/confirm_dialog.dart';
+import '../../widgets/kistify_app_bar.dart';
 import '../home/group_list_screen.dart';
 import 'edit_plan_screen.dart';
 
@@ -51,7 +52,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(S.t(context, 'group_management'))),
+      appBar: KistifyAppBar(title: S.t(context, 'group_management')),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [

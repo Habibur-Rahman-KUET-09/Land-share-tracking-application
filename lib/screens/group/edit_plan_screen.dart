@@ -8,6 +8,7 @@ import '../../models/plan_history_entry.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
 import '../../utils/currency_formatter.dart';
+import '../../widgets/kistify_app_bar.dart';
 
 /// FR Finalized Decision 4: "Installment Plan ফিক্সড না — ভবিষ্যতে
 /// পরিবর্তনযোগ্য, তবে history log থাকবে" — this screen both edits the plan
@@ -65,7 +66,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(S.t(context, 'edit_plan'))),
+      appBar: KistifyAppBar(title: S.t(context, 'edit_plan')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

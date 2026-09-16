@@ -37,7 +37,10 @@ class LandInstallmentApp extends StatelessWidget {
         // Recent Android targets draw edge-to-edge by default, so content can
         // sit behind the system nav bar unless explicitly inset — one global
         // SafeArea here covers every screen instead of patching each one.
-        builder: (context, child) => SafeArea(child: child!),
+        // top: false — the AppBar already colors/handles the status-bar area
+        // itself; padding it away here left that strip unpainted (showing
+        // as a plain black bar instead of the app's themed header).
+        builder: (context, child) => SafeArea(top: false, child: child!),
         home: const AuthGate(),
       ),
     );

@@ -6,6 +6,7 @@ import '../../l10n/app_strings.dart';
 import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
+import '../../widgets/kistify_app_bar.dart';
 import 'group_detail_screen.dart';
 
 /// FR 2.1 "একটি 'Land Group' তৈরি করা" + FR 2.2 "Installment Plan Setup" —
@@ -82,7 +83,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(S.t(context, 'new_group'))),
+      appBar: KistifyAppBar(title: S.t(context, 'new_group')),
       body: Form(
         key: _formKey,
         child: ListView(
