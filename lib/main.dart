@@ -31,7 +31,7 @@ class LandInstallmentApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Land Installment Tracker',
+        title: 'Kistify',
         theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
         home: const AuthGate(),
       ),

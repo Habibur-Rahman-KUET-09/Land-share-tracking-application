@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <g>
+    <!-- Land plot, divided into four shared quadrants -->
+    <polygon points="512,212 812,512 512,812 212,512" fill="#FFFFFF"/>
+    <path d="M512,212 L512,812" stroke="#00594A" stroke-width="14" opacity="0.32"/>
+    <path d="M212,512 L812,512" stroke="#00594A" stroke-width="14" opacity="0.32"/>
+    <!-- House mark -->
+    <path d="M512,392 L642,472 L607,472 L607,602 L417,602 L417,472 L382,472 Z" fill="#FFB300"/>
+  </g>
+</svg>

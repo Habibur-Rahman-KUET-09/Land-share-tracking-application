@@ -1,5 +1,5 @@
 name: land_installment_tracker
-description: "A new Flutter project."
+description: "Kistify — joint land-purchase installment tracker for friend groups."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -76,6 +76,20 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+  # Generates the app launcher icon (mipmap-*/ic_launcher.png + Android
+  # adaptive icon layers) from assets/icon/ — see "flutter pub run
+  # flutter_launcher_icons" in README.md.
+  flutter_launcher_icons: ^0.14.3
+
+# App icon source + adaptive-icon config for flutter_launcher_icons.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icon_full.png"
+  adaptive_icon_background: "#00594A"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  min_sdk_android: 23
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

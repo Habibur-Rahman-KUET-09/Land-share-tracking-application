@@ -11,7 +11,7 @@ import '../providers/locale_provider.dart';
 class S {
   static const Map<String, Map<String, String>> _m = {
     'bn': {
-      'app_title': 'জমি কিস্তি ট্র্যাকার',
+      'app_title': 'Kistify',
       'login': 'লগইন',
       'register': 'নতুন অ্যাকাউন্ট',
       'name': 'নাম',
@@ -116,7 +116,7 @@ class S {
       'error_generic': 'কিছু একটা সমস্যা হয়েছে',
     },
     'en': {
-      'app_title': 'Land Installment Tracker',
+      'app_title': 'Kistify',
       'login': 'Login',
       'register': 'Create Account',
       'name': 'Name',
