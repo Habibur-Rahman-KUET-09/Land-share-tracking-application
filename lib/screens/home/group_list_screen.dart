@@ -12,6 +12,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/kistify_mark.dart';
 import '../group/create_group_screen.dart';
 import '../group/group_detail_screen.dart';
+import '../profile/profile_screen.dart';
 
 /// Screen 1 (Home): FR 2.1 "একাধিক group সাপোর্ট" — every group the signed-in
 /// user belongs to.
@@ -43,6 +44,13 @@ class GroupListScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: S.t(context, 'my_profile'),
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            ),
+          ),
           IconButton(
             tooltip: S.t(context, 'language'),
             icon: const Icon(Icons.translate),
