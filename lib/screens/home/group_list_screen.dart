@@ -26,15 +26,6 @@ class GroupListScreen extends StatelessWidget {
     Icons.home_work_outlined,
   ];
 
-  // A little color variety across group cards instead of one flat teal tint.
-  static const _cardColors = [
-    (Color(0xFFE0F2F1), Color(0xFF00695C)), // teal
-    (Color(0xFFFFF3E0), Color(0xFF8A5300)), // amber
-    (Color(0xFFEDE7F6), Color(0xFF4527A0)), // purple
-    (Color(0xFFFCE4EC), Color(0xFFAD1457)), // rose
-    (Color(0xFFE3F2FD), Color(0xFF1565C0)), // blue
-  ];
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AppAuthProvider>();
@@ -99,12 +90,12 @@ class GroupListScreen extends StatelessWidget {
                   ),
                   child: ListTile(
                     leading: Builder(builder: (context) {
-                      final i = g.id.hashCode.abs() % _cardColors.length;
-                      final (bg, fg) = _cardColors[i];
+                      final (bg, fg) = AppColors.accentFor(g.id);
+                      final i = g.id.hashCode.abs() % _cardIcons.length;
                       return CircleAvatar(
                         backgroundColor: bg,
                         foregroundColor: fg,
-                        child: Icon(_cardIcons[i % _cardIcons.length]),
+                        child: Icon(_cardIcons[i]),
                       );
                     }),
                     title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.w500)),

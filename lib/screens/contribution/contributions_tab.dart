@@ -105,6 +105,7 @@ class _MyContributions extends StatelessWidget {
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 4),
               child: ListTile(
+                leading: _MethodIcon(method: c.method),
                 title: Text('${c.month}/${c.year} — ${CurrencyFormatter.format(c.amount)}'),
                 subtitle: Text(S.t(context, 'method_${c.method.name}')),
                 trailing: Row(
@@ -170,14 +171,20 @@ class _ApprovalsList extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                      future: FirebaseFirestore.instance.collection('users').doc(c.memberId).get(),
-                      builder: (context, userSnap) {
-                        final name = userSnap.data?.exists == true
-                            ? AppUser.fromMap(c.memberId, userSnap.data!.data()!).name
-                            : c.memberId;
-                        return Text(name, style: const TextStyle(fontWeight: FontWeight.bold));
-                      },
+                    Row(
+                      children: [
+                        _MethodIcon(method: c.method),
+                        const SizedBox(width: 10),
+                        FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                          future: FirebaseFirestore.instance.collection('users').doc(c.memberId).get(),
+                          builder: (context, userSnap) {
+                            final name = userSnap.data?.exists == true
+                                ? AppUser.fromMap(c.memberId, userSnap.data!.data()!).name
+                                : c.memberId;
+                            return Text(name, style: const TextStyle(fontWeight: FontWeight.bold));
+                          },
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text('${c.month}/${c.year} — ${CurrencyFormatter.format(c.amount)} (${S.t(context, 'method_${c.method.name}')})'),
@@ -250,6 +257,36 @@ class _ApprovalsList extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _MethodIcon extends StatelessWidget {
+  final PaymentMethod method;
+  const _MethodIcon({required this.method});
+
+  static const _icons = {
+    PaymentMethod.bkash: Icons.phone_android,
+    PaymentMethod.bank: Icons.account_balance_outlined,
+    PaymentMethod.cash: Icons.payments_outlined,
+    PaymentMethod.other: Icons.more_horiz,
+  };
+
+  static const _colors = {
+    PaymentMethod.bkash: (Color(0xFFFCE4EC), Color(0xFFAD1457)),
+    PaymentMethod.bank: (Color(0xFFE3F2FD), Color(0xFF1565C0)),
+    PaymentMethod.cash: (Color(0xFFE8F5E9), Color(0xFF2E7D32)),
+    PaymentMethod.other: (Color(0xFFEDE7F6), Color(0xFF4527A0)),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, fg) = _colors[method]!;
+    return CircleAvatar(
+      backgroundColor: bg,
+      foregroundColor: fg,
+      radius: 18,
+      child: Icon(_icons[method], size: 18),
     );
   }
 }

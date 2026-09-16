@@ -11,6 +11,7 @@ import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/builder_payment_service.dart';
 import '../../services/storage_service.dart';
+import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/empty_state.dart';
 
@@ -38,7 +39,20 @@ class BuilderPaymentScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(S.t(context, 'total_remitted')),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Color(0x1A0F6E5C),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.account_balance_outlined, size: 18, color: AppColors.primary),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(S.t(context, 'total_remitted')),
+                          ],
+                        ),
                         Text(
                           CurrencyFormatter.format(total),
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -56,9 +70,15 @@ class BuilderPaymentScreen extends StatelessWidget {
                         itemCount: payments.length,
                         itemBuilder: (context, index) {
                           final p = payments[index];
+                          final (iconBg, iconFg) = AppColors.accentFor(p.id);
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 4),
                             child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: iconBg,
+                                foregroundColor: iconFg,
+                                child: const Icon(Icons.payments_outlined, size: 18),
+                              ),
                               title: Text(CurrencyFormatter.format(p.amount)),
                               subtitle: Text(
                                 '${p.date.day}-${p.date.month}-${p.date.year}'

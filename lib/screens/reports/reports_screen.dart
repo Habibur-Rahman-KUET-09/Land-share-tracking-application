@@ -12,6 +12,7 @@ import '../../services/contribution_service.dart';
 import '../../services/excel_export_service.dart';
 import '../../services/group_service.dart';
 import '../../services/pdf_export_service.dart';
+import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/member_name.dart';
@@ -105,7 +106,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            Text(S.t(context, 'individual_history'), style: Theme.of(context).textTheme.titleMedium),
+            _SectionHeader(
+              icon: Icons.receipt_long_outlined,
+              iconColor: AppColors.roleCollectorFg,
+              label: S.t(context, 'individual_history'),
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: _selectedMemberId,
@@ -146,7 +151,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 },
               ),
             const SizedBox(height: 24),
-            Text(S.t(context, 'builder_ledger'), style: Theme.of(context).textTheme.titleMedium),
+            _SectionHeader(
+              icon: Icons.account_balance_outlined,
+              iconColor: AppColors.primary,
+              label: S.t(context, 'builder_ledger'),
+            ),
             const SizedBox(height: 8),
             StreamBuilder<List<BuilderPayment>>(
               stream: BuilderPaymentService().watch(widget.group.id),
@@ -165,6 +174,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           child: ListTile(
                             dense: true,
+                            leading: const CircleAvatar(
+                              radius: 15,
+                              backgroundColor: Color(0x1A0F6E5C),
+                              foregroundColor: AppColors.primary,
+                              child: Icon(Icons.payments_outlined, size: 16),
+                            ),
                             title: Text(CurrencyFormatter.format(p.amount)),
                             subtitle: Text('${p.date.day}-${p.date.month}-${p.date.year}'),
                           ),
@@ -191,5 +206,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
       case ContributionStatus.pendingConfirmation:
         return 'pending';
     }
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  const _SectionHeader({required this.icon, required this.iconColor, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.12), shape: BoxShape.circle),
+          child: Icon(icon, size: 16, color: iconColor),
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.heading)),
+      ],
+    );
   }
 }

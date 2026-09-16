@@ -27,6 +27,34 @@ class AuditLogScreen extends StatelessWidget {
     'record_builder_payment': 'বিল্ডারকে জমার এন্ট্রি',
   };
 
+  static const _actionIcons = {
+    'create_group': Icons.add_circle_outline,
+    'edit_plan': Icons.tune,
+    'add_member': Icons.person_add_alt_outlined,
+    'update_role': Icons.badge_outlined,
+    'update_member_amount': Icons.edit_outlined,
+    'exit_member': Icons.person_remove_outlined,
+    'submit_contribution': Icons.upload_outlined,
+    'approve_contribution': Icons.check_circle_outline,
+    'reject_contribution': Icons.cancel_outlined,
+    'cancel_contribution': Icons.undo_outlined,
+    'record_builder_payment': Icons.account_balance_outlined,
+  };
+
+  static const _actionColors = {
+    'create_group': (Color(0xFFE0F2F1), Color(0xFF00695C)),
+    'edit_plan': (Color(0xFFEDE7F6), Color(0xFF4527A0)),
+    'add_member': (Color(0xFFE3F2FD), Color(0xFF1565C0)),
+    'update_role': (Color(0xFFE3F2FD), Color(0xFF1565C0)),
+    'update_member_amount': (Color(0xFFFFF3E0), Color(0xFF8A5300)),
+    'exit_member': (Color(0xFFFCEBEB), Color(0xFF791F1F)),
+    'submit_contribution': (Color(0xFFFFF3E0), Color(0xFF8A5300)),
+    'approve_contribution': (Color(0xFFE3F4EC), Color(0xFF1B6B44)),
+    'reject_contribution': (Color(0xFFFCEBEB), Color(0xFF791F1F)),
+    'cancel_contribution': (Color(0xFFEDEDED), Color(0xFF5A5A5A)),
+    'record_builder_payment': (Color(0xFFE0F2F1), Color(0xFF00695C)),
+  };
+
   @override
   Widget build(BuildContext context) {
     if (!canView) {
@@ -44,6 +72,7 @@ class AuditLogScreen extends StatelessWidget {
           itemCount: entries.length,
           itemBuilder: (context, index) {
             final e = entries[index];
+            final (iconBg, iconFg) = _actionColors[e.action] ?? (AppColors.dueBg, AppColors.dueFg);
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 4),
               child: Padding(
@@ -51,9 +80,11 @@ class AuditLogScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 2),
-                      child: Icon(Icons.history, size: 16, color: AppColors.mutedText),
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: iconBg,
+                      foregroundColor: iconFg,
+                      child: Icon(_actionIcons[e.action] ?? Icons.history, size: 16),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

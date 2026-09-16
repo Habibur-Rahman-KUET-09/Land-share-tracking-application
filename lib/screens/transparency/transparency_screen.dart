@@ -48,9 +48,29 @@ class TransparencyScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           children: [
-                            _row(context, S.t(context, 'total_collected'), totalCollected),
-                            _row(context, S.t(context, 'total_remitted'), totalRemitted),
-                            _row(context, S.t(context, 'difference'), difference, isLast: true, negative: difference < 0),
+                            _row(
+                              context,
+                              S.t(context, 'total_collected'),
+                              totalCollected,
+                              icon: Icons.trending_up,
+                              iconColor: AppColors.approvedFg,
+                            ),
+                            _row(
+                              context,
+                              S.t(context, 'total_remitted'),
+                              totalRemitted,
+                              icon: Icons.account_balance_outlined,
+                              iconColor: AppColors.roleCollectorFg,
+                            ),
+                            _row(
+                              context,
+                              S.t(context, 'difference'),
+                              difference,
+                              icon: Icons.balance_outlined,
+                              iconColor: AppColors.roleAdminFg,
+                              isLast: true,
+                              negative: difference < 0,
+                            ),
                           ],
                         ),
                       ),
@@ -64,6 +84,7 @@ class TransparencyScreen extends StatelessWidget {
                     ...members.map((m) {
                       final paidTotal =
                           approved.where((c) => c.memberId == m.uid).fold<double>(0, (s, c) => s + c.amount);
+                      final (avatarBg, avatarFg) = AppColors.accentFor(m.uid);
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 4),
                         shape: RoundedRectangleBorder(
@@ -71,6 +92,11 @@ class TransparencyScreen extends StatelessWidget {
                           side: const BorderSide(color: AppColors.border, width: 0.6),
                         ),
                         child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: avatarBg,
+                            foregroundColor: avatarFg,
+                            child: const Icon(Icons.person, size: 20),
+                          ),
                           title: MemberName(uid: m.uid),
                           subtitle: Text('${CurrencyFormatter.format(m.monthlyAmount)}/মাস'),
                           trailing: Text(
@@ -90,7 +116,15 @@ class TransparencyScreen extends StatelessWidget {
     );
   }
 
-  Widget _row(BuildContext context, String label, double amount, {bool isLast = false, bool negative = false}) {
+  Widget _row(
+    BuildContext context,
+    String label,
+    double amount, {
+    required IconData icon,
+    required Color iconColor,
+    bool isLast = false,
+    bool negative = false,
+  }) {
     final valueColor = negative ? AppColors.negative : AppColors.heading;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -100,7 +134,13 @@ class TransparencyScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.heading)),
+          Row(
+            children: [
+              Icon(icon, size: 18, color: iconColor),
+              const SizedBox(width: 8),
+              Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.heading)),
+            ],
+          ),
           Text(
             '${negative ? '-' : ''}${CurrencyFormatter.format(amount.abs())}',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: valueColor),

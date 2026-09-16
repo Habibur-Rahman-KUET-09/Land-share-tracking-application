@@ -42,6 +42,20 @@ class AppColors {
   static const roleCollectorFg = Color(0xFF00695C);
   static const roleMemberBg = Color(0xFFECEFF1);
   static const roleMemberFg = Color(0xFF546E7A);
+
+  // General-purpose pastel accent palette — used for per-item leading icon
+  // circles (group cards, member avatars, payment-method icons, ...) so
+  // lists of similar items don't all read as one flat color.
+  static const accentPairs = [
+    (Color(0xFFE0F2F1), Color(0xFF00695C)), // teal
+    (Color(0xFFFFF3E0), Color(0xFF8A5300)), // amber
+    (Color(0xFFEDE7F6), Color(0xFF4527A0)), // purple
+    (Color(0xFFFCE4EC), Color(0xFFAD1457)), // rose
+    (Color(0xFFE3F2FD), Color(0xFF1565C0)), // blue
+    (Color(0xFFE8F5E9), Color(0xFF2E7D32)), // green
+  ];
+
+  static (Color, Color) accentFor(Object key) => accentPairs[key.hashCode.abs() % accentPairs.length];
 }
 
 ThemeData buildAppTheme() {

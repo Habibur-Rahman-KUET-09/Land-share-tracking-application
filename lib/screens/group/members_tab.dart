@@ -119,6 +119,7 @@ class _MemberTile extends StatelessWidget {
             ? AppUser.fromMap(member.uid, snap.data!.data()!).name
             : member.uid;
         final (roleBg, roleFg) = _roleColors(member.role);
+        final (avatarBg, avatarFg) = AppColors.accentFor(member.uid);
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 4),
           shape: RoundedRectangleBorder(
@@ -126,6 +127,11 @@ class _MemberTile extends StatelessWidget {
             side: const BorderSide(color: AppColors.border, width: 0.6),
           ),
           child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: avatarBg,
+              foregroundColor: avatarFg,
+              child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?'),
+            ),
             title: Text(name),
             subtitle: Text(
               '${CurrencyFormatter.format(member.monthlyAmount)}/মাস'

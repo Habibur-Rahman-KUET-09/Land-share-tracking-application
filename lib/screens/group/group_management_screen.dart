@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/land_group.dart';
 import '../../services/group_service.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../home/group_list_screen.dart';
 import 'edit_plan_screen.dart';
@@ -56,7 +57,11 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
         children: [
           Card(
             child: ListTile(
-              leading: const Icon(Icons.tune),
+              leading: const CircleAvatar(
+                backgroundColor: Color(0x1A0F6E5C),
+                foregroundColor: AppColors.primary,
+                child: Icon(Icons.tune),
+              ),
               title: Text(S.t(context, 'edit_plan')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(

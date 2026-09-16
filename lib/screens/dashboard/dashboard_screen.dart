@@ -60,9 +60,11 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 _StatCard(
                   title: S.t(context, 'overall_progress'),
+                  icon: Icons.trending_up,
+                  iconColor: AppColors.approvedFg,
                   child: Column(
                     children: [
-                      _ProgressBar(value: overallPercent.toDouble()),
+                      _ProgressBar(value: overallPercent.toDouble(), color: AppColors.approvedFg),
                       const SizedBox(height: 10),
                       Text(
                         '${(overallPercent * 100).toStringAsFixed(1)}%',
@@ -81,10 +83,13 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 _StatCard(
                   title: '${S.t(context, 'this_month')} (${now.month}/${now.year})',
+                  icon: Icons.calendar_month_outlined,
+                  iconColor: AppColors.pendingFg,
                   child: Column(
                     children: [
                       _ProgressBar(
                         value: expectedThisMonth <= 0 ? 0 : (collectedThisMonth / expectedThisMonth).clamp(0, 1.0),
+                        color: AppColors.pendingFg,
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -98,12 +103,15 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 _StatCard(
                   title: 'কিস্তি অগ্রগতি',
+                  icon: Icons.flag_outlined,
+                  iconColor: AppColors.roleCreatorFg,
                   child: Column(
                     children: [
                       _ProgressBar(
                         value: group.totalInstallments <= 0
                             ? 0
                             : (monthsCompleted / group.totalInstallments).clamp(0, 1.0),
+                        color: AppColors.roleCreatorFg,
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -128,9 +136,15 @@ class DashboardScreen extends StatelessWidget {
                     month: now.month,
                     year: now.year,
                   );
+                  final (avatarBg, avatarFg) = AppColors.accentFor(m.uid);
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: avatarBg,
+                        foregroundColor: avatarFg,
+                        child: const Icon(Icons.person, size: 20),
+                      ),
                       title: MemberName(uid: m.uid),
                       subtitle: Text(
                         '${CurrencyFormatter.format(status.paidAmount)} / ${CurrencyFormatter.format(status.expectedAmount)}',
@@ -171,8 +185,10 @@ class DashboardScreen extends StatelessWidget {
 
 class _StatCard extends StatelessWidget {
   final String title;
+  final IconData icon;
+  final Color iconColor;
   final Widget child;
-  const _StatCard({required this.title, required this.child});
+  const _StatCard({required this.title, required this.icon, required this.iconColor, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -182,9 +198,19 @@ class _StatCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.heading),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.12), shape: BoxShape.circle),
+                  child: Icon(icon, size: 16, color: iconColor),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.heading),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             child,
@@ -198,13 +224,14 @@ class _StatCard extends StatelessWidget {
 /// Rounded, flat-track progress bar matching the mockups' `.bar` style.
 class _ProgressBar extends StatelessWidget {
   final double value;
-  const _ProgressBar({required this.value});
+  final Color color;
+  const _ProgressBar({required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
-      child: LinearProgressIndicator(value: value, minHeight: 8),
+      child: LinearProgressIndicator(value: value, minHeight: 8, color: color),
     );
   }
 }
