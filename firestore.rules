@@ -56,37 +56,44 @@ service cloud.firestore {
       return isSignedIn() && myRole(groupId) in ['creator', 'collector'];
     }
 
-    // A group's Creator/Admin correcting another member's display name
-    // from that group's Members tab (there's no self-service profile
-    // editor). [groupId] here is a value the *write itself* supplies (see
-    // isGroupManagerRenamingMember below) — not a path segment — so it
-    // can't reuse myRole()/isGroupCanceller() above, which read it out of
-    // the match block's own {groupId}.
-    function isGroupManagerRenamingUser(groupId, targetUid) {
+    // A group's Creator/Admin correcting another member's display name or
+    // profile email from that group's Members tab (there's no self-service
+    // profile editor). [groupId] here is a value the *write itself*
+    // supplies (see isGroupManagerEditingMember below) — not a path
+    // segment — so it can't reuse myRole()/isGroupCanceller() above, which
+    // read it out of the match block's own {groupId}.
+    function isGroupManagerEditingUser(groupId, targetUid) {
       return isSignedIn() && groupId != null &&
         targetUid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds &&
         get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role
           in ['creator', 'admin'];
     }
 
-    // Only the `name` (+ the groupId proof field itself) may ever change
-    // this way — never email/phone/photoUrl, which stay owner-only.
-    function isGroupManagerRenamingMember(targetUid) {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'nameLastEditedByGroupId']) &&
-        isGroupManagerRenamingUser(request.resource.data.get('nameLastEditedByGroupId', null), targetUid);
+    // Each field may only ever change together with its own groupId proof
+    // field, one at a time — never phone/photoUrl, and never both name and
+    // email in the same write, which stay owner-only / two separate calls.
+    function isGroupManagerEditingMember(targetUid) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return (
+        changed.hasOnly(['name', 'nameLastEditedByGroupId']) &&
+        isGroupManagerEditingUser(request.resource.data.get('nameLastEditedByGroupId', null), targetUid)
+      ) || (
+        changed.hasOnly(['email', 'emailLastEditedByGroupId']) &&
+        isGroupManagerEditingUser(request.resource.data.get('emailLastEditedByGroupId', null), targetUid)
+      );
     }
 
     // ---------------------------------------------------------------
     // users/{uid} — profile. Any signed-in user may read (needed for
     // member-name lookups and the "add member by phone/email" search);
     // only the owner may write their own document — except a group's
-    // Creator/Admin may also correct another member's name (see above).
+    // Creator/Admin may also correct another member's name/email (above).
     // ---------------------------------------------------------------
     match /users/{uid} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == uid;
       allow update: if isSignedIn() &&
-        (request.auth.uid == uid || isGroupManagerRenamingMember(uid));
+        (request.auth.uid == uid || isGroupManagerEditingMember(uid));
       allow delete: if false;
 
       match /fcmTokens/{tokenId} {

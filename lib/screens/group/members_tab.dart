@@ -128,15 +128,46 @@ class _MemberTile extends StatelessWidget {
   });
 
   Future<void> _renameMember(BuildContext context, String currentName) async {
-    final ctrl = TextEditingController(text: currentName);
-    final newName = await showDialog<String>(
+    final newName = await _promptText(context, label: S.t(context, 'name'), initial: currentName);
+    if (newName == null || newName.isEmpty || newName == currentName) return;
+    try {
+      await AuthService().updateMemberNameAsManager(targetUid: member.uid, name: newName, viaGroupId: group.id);
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  Future<void> _updateMemberEmail(BuildContext context, String currentEmail) async {
+    final newEmail = await _promptText(
+      context,
+      label: S.t(context, 'email'),
+      initial: currentEmail,
+      keyboardType: TextInputType.emailAddress,
+    );
+    if (newEmail == null || newEmail.isEmpty || newEmail == currentEmail) return;
+    try {
+      await AuthService().updateMemberEmailAsManager(targetUid: member.uid, email: newEmail, viaGroupId: group.id);
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  Future<String?> _promptText(
+    BuildContext context, {
+    required String label,
+    required String initial,
+    TextInputType? keyboardType,
+  }) {
+    final ctrl = TextEditingController(text: initial);
+    return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(S.t(context, 'name')),
+        title: Text(label),
         content: TextField(
           controller: ctrl,
           autofocus: true,
-          decoration: InputDecoration(labelText: S.t(context, 'name'), border: const OutlineInputBorder()),
+          keyboardType: keyboardType,
+          decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.t(context, 'cancel'))),
@@ -147,12 +178,6 @@ class _MemberTile extends StatelessWidget {
         ],
       ),
     );
-    if (newName == null || newName.isEmpty || newName == currentName) return;
-    try {
-      await AuthService().updateMemberNameAsManager(targetUid: member.uid, name: newName, viaGroupId: group.id);
-    } catch (e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
-    }
   }
 
   @override
@@ -160,9 +185,8 @@ class _MemberTile extends StatelessWidget {
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       future: FirebaseFirestore.instance.collection('users').doc(member.uid).get(),
       builder: (context, snap) {
-        final name = snap.data?.exists == true
-            ? AppUser.fromMap(member.uid, snap.data!.data()!).name
-            : member.uid;
+        final profile = snap.data?.exists == true ? AppUser.fromMap(member.uid, snap.data!.data()!) : null;
+        final name = profile?.name ?? member.uid;
         final (roleBg, roleFg) = _roleColors(member.role);
         final (avatarBg, avatarFg) = AppColors.accentFor(member.uid);
         return Card(
@@ -185,20 +209,20 @@ class _MemberTile extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (canEditNames && member.isActive)
-                  IconButton(
-                    tooltip: S.t(context, 'edit'),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    onPressed: () => _renameMember(context, name),
-                  ),
                 StatusChip(label: S.t(context, _roleKey(member.role)), background: roleBg, foreground: roleFg),
-                // The creator's own role/removal is never editable — group
-                // deletion (GroupManagementScreen) is the only way to undo it.
-                if (canManage && member.isActive && !member.isCreator)
+                // canManage's role/amount/exit items are never shown for the
+                // creator's own row — group deletion (GroupManagementScreen)
+                // is the only way to undo the creator. canEditNames's
+                // rename/email items have no such exclusion.
+                if (member.isActive && ((canManage && !member.isCreator) || canEditNames))
                   PopupMenuButton<String>(
                     onSelected: (v) async {
                       final groupService = GroupService();
-                      if (v.startsWith('role_')) {
+                      if (v == 'rename') {
+                        await _renameMember(context, name);
+                      } else if (v == 'update_email') {
+                        await _updateMemberEmail(context, profile?.email ?? '');
+                      } else if (v.startsWith('role_')) {
                         final role = GroupRole.values.firstWhere((r) => 'role_${r.name}' == v);
                         try {
                           await groupService.updateMemberRole(
@@ -236,12 +260,21 @@ class _MemberTile extends StatelessWidget {
                       }
                     },
                     itemBuilder: (context) => [
-                      for (final role in [GroupRole.admin, GroupRole.collector, GroupRole.member])
-                        if (role != member.role)
-                          PopupMenuItem(value: 'role_${role.name}', child: Text('${S.t(context, _roleKey(role))} করুন')),
-                      if (group.contributionType == ContributionType.custom)
-                        PopupMenuItem(value: 'set_amount', child: Text(S.t(context, 'monthly_amount'))),
-                      PopupMenuItem(value: 'exit', child: Text(S.t(context, 'exit_group'))),
+                      if (canEditNames) ...[
+                        PopupMenuItem(value: 'rename', child: Text(S.t(context, 'name'))),
+                        PopupMenuItem(value: 'update_email', child: Text(S.t(context, 'email'))),
+                      ],
+                      if (canManage && !member.isCreator) ...[
+                        for (final role in [GroupRole.admin, GroupRole.collector, GroupRole.member])
+                          if (role != member.role)
+                            PopupMenuItem(
+                              value: 'role_${role.name}',
+                              child: Text('${S.t(context, _roleKey(role))} করুন'),
+                            ),
+                        if (group.contributionType == ContributionType.custom)
+                          PopupMenuItem(value: 'set_amount', child: Text(S.t(context, 'monthly_amount'))),
+                        PopupMenuItem(value: 'exit', child: Text(S.t(context, 'exit_group'))),
+                      ],
                     ],
                   ),
               ],

@@ -160,6 +160,21 @@ class AuthService {
     });
   }
 
+  /// Same as [updateMemberNameAsManager], for the profile's `email` field —
+  /// this is just the profile/search field shown on the Members tab and
+  /// used by "add member by email"; it does not touch the member's actual
+  /// FirebaseAuth sign-in email, so changing it never affects their login.
+  Future<void> updateMemberEmailAsManager({
+    required String targetUid,
+    required String email,
+    required String viaGroupId,
+  }) async {
+    await _db.collection('users').doc(targetUid).update({
+      'email': email.trim(),
+      'emailLastEditedByGroupId': viaGroupId,
+    });
+  }
+
   /// Creates the users/{uid} profile document on first sign-in, for any
   /// auth method. No-op if the profile already exists (idempotent, so it's
   /// safe to call from multiple sign-in paths and a central listener).
