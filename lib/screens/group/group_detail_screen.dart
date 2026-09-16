@@ -17,7 +17,9 @@ import 'group_management_screen.dart';
 import 'members_tab.dart';
 
 /// The group's hub: Dashboard, Members, Contributions, Builder Payments,
-/// Reports, Transparency ledger, Audit log — one tab per FRD module.
+/// Reports, Transparency ledger, Audit log — one tab per FRD module, minus
+/// whichever the current member has no access to at all (Reports, Audit
+/// Log — both Admin/Creator-only).
 class GroupDetailScreen extends StatefulWidget {
   final String groupId;
   const GroupDetailScreen({super.key, required this.groupId});
@@ -26,21 +28,8 @@ class GroupDetailScreen extends StatefulWidget {
   State<GroupDetailScreen> createState() => _GroupDetailScreenState();
 }
 
-class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _GroupDetailScreenState extends State<GroupDetailScreen> {
   final _groupService = GroupService();
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 7, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,60 +66,93 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
           future: _groupService.getMember(widget.groupId, uid),
           builder: (context, memberSnap) {
             final me = memberSnap.data;
-            final canManageGroup = me?.canManageGroup ?? false;
-            final canApprove = me?.canApproveOrRejectContribution ?? false;
-            final canCancel = me?.canCancelApprovedContribution ?? false;
-            final canRecordPayment = me?.canRecordBuilderPayment ?? false;
-            final canViewReports = me?.canDownloadReports ?? false;
-            final canViewAudit = me?.canViewAuditLog ?? false;
-            return Scaffold(
-              appBar: KistifyAppBar(
-                title: group.name,
-                actions: [
-                  if (canManageGroup)
-                    IconButton(
-                      tooltip: S.t(context, 'group_management'),
-                      icon: const Icon(Icons.tune),
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => GroupManagementScreen(group: group)),
-                      ),
-                    ),
-                ],
-                bottom: TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  tabs: [
-                    Tab(text: S.t(context, 'dashboard')),
-                    Tab(text: S.t(context, 'members')),
-                    Tab(text: S.t(context, 'contributions')),
-                    Tab(text: S.t(context, 'builder_payments')),
-                    Tab(text: S.t(context, 'reports')),
-                    Tab(text: S.t(context, 'transparency')),
-                    Tab(text: S.t(context, 'audit_log')),
-                  ],
-                ),
-              ),
-              body: TabBarView(
-                controller: _tabController,
-                children: [
-                  DashboardScreen(group: group, currentUid: uid),
-                  MembersTab(group: group, canManage: canManageGroup, currentUid: uid),
-                  ContributionsTab(
-                    group: group,
-                    canApprove: canApprove,
-                    canCancel: canCancel,
-                    currentUid: uid,
-                  ),
-                  BuilderPaymentScreen(group: group, canRecord: canRecordPayment),
-                  ReportsScreen(group: group, canView: canViewReports),
-                  TransparencyScreen(group: group),
-                  AuditLogScreen(groupId: group.id, canView: canViewAudit),
-                ],
-              ),
-            );
+            return _GroupTabs(group: group, me: me, currentUid: uid);
           },
         );
       },
+    );
+  }
+}
+
+/// Owns the TabController, sized to exactly the tabs this member can see —
+/// built fresh (via the ValueKey below) whenever the member's permissions
+/// change, so the controller's length always matches the visible tab count.
+class _GroupTabs extends StatefulWidget {
+  final LandGroup group;
+  final GroupMember? me;
+  final String currentUid;
+
+  _GroupTabs({required this.group, required this.me, required this.currentUid})
+      : super(key: ValueKey('${me?.canDownloadReports}-${me?.canViewAuditLog}'));
+
+  @override
+  State<_GroupTabs> createState() => _GroupTabsState();
+}
+
+class _GroupTabsState extends State<_GroupTabs> with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  bool get _canManageGroup => widget.me?.canManageGroup ?? false;
+  bool get _canApprove => widget.me?.canApproveOrRejectContribution ?? false;
+  bool get _canCancel => widget.me?.canCancelApprovedContribution ?? false;
+  bool get _canRecordPayment => widget.me?.canRecordBuilderPayment ?? false;
+  bool get _canViewReports => widget.me?.canDownloadReports ?? false;
+  bool get _canViewAudit => widget.me?.canViewAuditLog ?? false;
+
+  @override
+  void initState() {
+    super.initState();
+    final tabCount = 5 + (_canViewReports ? 1 : 0) + (_canViewAudit ? 1 : 0);
+    _tabController = TabController(length: tabCount, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final group = widget.group;
+    final uid = widget.currentUid;
+
+    final tabs = <Tab>[
+      Tab(text: S.t(context, 'dashboard')),
+      Tab(text: S.t(context, 'members')),
+      Tab(text: S.t(context, 'contributions')),
+      Tab(text: S.t(context, 'builder_payments')),
+      if (_canViewReports) Tab(text: S.t(context, 'reports')),
+      Tab(text: S.t(context, 'transparency')),
+      if (_canViewAudit) Tab(text: S.t(context, 'audit_log')),
+    ];
+
+    final tabViews = <Widget>[
+      DashboardScreen(group: group, currentUid: uid),
+      MembersTab(group: group, canManage: _canManageGroup, currentUid: uid),
+      ContributionsTab(group: group, canApprove: _canApprove, canCancel: _canCancel, currentUid: uid),
+      BuilderPaymentScreen(group: group, canRecord: _canRecordPayment),
+      if (_canViewReports) ReportsScreen(group: group, canView: true),
+      TransparencyScreen(group: group),
+      if (_canViewAudit) AuditLogScreen(groupId: group.id, canView: true),
+    ];
+
+    return Scaffold(
+      appBar: KistifyAppBar(
+        title: group.name,
+        actions: [
+          if (_canManageGroup)
+            IconButton(
+              tooltip: S.t(context, 'group_management'),
+              icon: const Icon(Icons.tune),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => GroupManagementScreen(group: group)),
+              ),
+            ),
+        ],
+        bottom: TabBar(controller: _tabController, isScrollable: true, tabs: tabs),
+      ),
+      body: TabBarView(controller: _tabController, children: tabViews),
     );
   }
 }

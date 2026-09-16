@@ -48,8 +48,7 @@ class PdfExportService {
       );
     }
 
-    final title = await label('জমি কিস্তি ট্র্যাকার', fontSize: 16, bold: true);
-    final subtitle = await label('${group.name} — ${group.landLocation}', fontSize: 12);
+    final subtitle = await label('${group.name} — ${group.landLocation}', fontSize: 16, bold: true);
 
     final memberHeaderRow = pw.TableRow(
       decoration: const pw.BoxDecoration(color: PdfColors.grey300),
@@ -136,8 +135,6 @@ class PdfExportService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         build: (context) => [
-          title,
-          pw.SizedBox(height: 4),
           subtitle,
           pw.SizedBox(height: 16),
           summaryHeading,

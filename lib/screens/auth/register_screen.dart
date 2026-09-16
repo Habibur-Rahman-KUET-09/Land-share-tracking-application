@@ -36,12 +36,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _error = null;
     });
     try {
-      final auth = context.read<AppAuthProvider>().authService;
-      await auth.registerWithEmail(
+      final authProvider = context.read<AppAuthProvider>();
+      await authProvider.authService.registerWithEmail(
         name: _nameCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text,
       );
+      // The auth-state listener may have run (and skipped itself, since
+      // registerWithEmail above was still bootstrapping) before this
+      // profile write landed — pull the now-correct profile in explicitly
+      // rather than rely on another auth-state event that may not come.
+      await authProvider.refreshProfile();
     } on FirebaseAuthException catch (e) {
       setState(() => _error = e.message ?? e.code);
     } finally {

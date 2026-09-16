@@ -38,7 +38,13 @@ class AppAuthProvider extends ChangeNotifier {
     // the app hangs on the loading spinner after a real, successful sign-in.
     try {
       authError = null;
-      await authService.ensureProfile(user);
+      // Skip while a register/sign-in call is already writing this profile
+      // itself, with the real name — this blind, name-less call would
+      // otherwise sometimes win that race and permanently stick the user
+      // with the fallback "নতুন ব্যবহারকারী" name (see AuthService docs).
+      if (!authService.isBootstrapping) {
+        await authService.ensureProfile(user);
+      }
       profile = await authService.getProfile(user.uid);
     } catch (e) {
       profile = null;

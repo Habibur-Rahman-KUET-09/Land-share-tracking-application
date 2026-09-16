@@ -20,6 +20,17 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
+  // True while one of the calls below is signing a user in and is about to
+  // write their profile itself, with the real name in hand. Firebase's
+  // authStateChanges stream can fire — and race AppAuthProvider's own
+  // ensureProfile(user) call (no name) — before that write below completes;
+  // since ensureProfile() is a no-op once the doc exists, whichever write
+  // lands first wins *forever*. AppAuthProvider checks this flag and skips
+  // its own call while it's true, so the listener can never win that race
+  // with a blank name.
+  bool _bootstrapping = false;
+  bool get isBootstrapping => _bootstrapping;
+
   // ---------------------------------------------------------------------
   // Email/password
   // ---------------------------------------------------------------------
@@ -29,9 +40,14 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final cred = await _auth.createUserWithEmailAndPassword(email: email, password: password);
-    await ensureProfile(cred.user!, name: name, email: email);
-    return cred;
+    _bootstrapping = true;
+    try {
+      final cred = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      await ensureProfile(cred.user!, name: name, email: email);
+      return cred;
+    } finally {
+      _bootstrapping = false;
+    }
   }
 
   Future<UserCredential> signInWithEmail({required String email, required String password}) {
@@ -43,18 +59,23 @@ class AuthService {
   // ---------------------------------------------------------------------
 
   Future<UserCredential> signInWithGoogle() async {
-    final account = await _googleSignIn.signIn();
-    if (account == null) {
-      throw FirebaseAuthException(code: 'sign-in-canceled', message: 'Google sign-in was canceled.');
+    _bootstrapping = true;
+    try {
+      final account = await _googleSignIn.signIn();
+      if (account == null) {
+        throw FirebaseAuthException(code: 'sign-in-canceled', message: 'Google sign-in was canceled.');
+      }
+      final googleAuth = await account.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final result = await _auth.signInWithCredential(credential);
+      await ensureProfile(result.user!, name: account.displayName, email: account.email);
+      return result;
+    } finally {
+      _bootstrapping = false;
     }
-    final googleAuth = await account.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-    final result = await _auth.signInWithCredential(credential);
-    await ensureProfile(result.user!, name: account.displayName, email: account.email);
-    return result;
   }
 
   // ---------------------------------------------------------------------
@@ -87,10 +108,15 @@ class AuthService {
     required String smsCode,
     String? nameIfNewUser,
   }) async {
-    final credential = PhoneAuthProvider.credential(verificationId: verificationId, smsCode: smsCode);
-    final result = await _auth.signInWithCredential(credential);
-    await ensureProfile(result.user!, name: nameIfNewUser, phone: result.user!.phoneNumber);
-    return result;
+    _bootstrapping = true;
+    try {
+      final credential = PhoneAuthProvider.credential(verificationId: verificationId, smsCode: smsCode);
+      final result = await _auth.signInWithCredential(credential);
+      await ensureProfile(result.user!, name: nameIfNewUser, phone: result.user!.phoneNumber);
+      return result;
+    } finally {
+      _bootstrapping = false;
+    }
   }
 
   // ---------------------------------------------------------------------

@@ -55,8 +55,11 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
     try {
-      final auth = context.read<AppAuthProvider>().authService;
-      await auth.signInWithGoogle();
+      final authProvider = context.read<AppAuthProvider>();
+      await authProvider.authService.signInWithGoogle();
+      // See RegisterScreen._registerWithEmail for why this explicit refresh
+      // is needed even though signInWithGoogle already wrote the profile.
+      await authProvider.refreshProfile();
     } on FirebaseAuthException catch (e) {
       setState(() => _error = e.message ?? e.code);
     } catch (e) {
