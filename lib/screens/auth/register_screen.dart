@@ -47,6 +47,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // profile write landed — pull the now-correct profile in explicitly
       // rather than rely on another auth-state event that may not come.
       await authProvider.refreshProfile();
+      // This screen was pushed on top of LoginScreen, which is itself just
+      // AuthGate's *content* while signed out — not a separate route. Once
+      // sign-up flips firebaseUser non-null, AuthGate rebuilds to show
+      // GroupListScreen underneath, but this pushed route still covers it;
+      // nothing pops it automatically, so the user was stuck looking at a
+      // stale register form after a successful sign-up. Pop back to the
+      // root route so AuthGate's now-current content is what's visible.
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     } on FirebaseAuthException catch (e) {
       setState(() => _error = e.message ?? e.code);
     } finally {

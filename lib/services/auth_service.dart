@@ -138,12 +138,26 @@ class AuthService {
         );
   }
 
-  Future<void> updateProfile({required String uid, String? name, String? photoUrl}) async {
-    final updates = <String, dynamic>{};
-    if (name != null) updates['name'] = name;
-    if (photoUrl != null) updates['photoUrl'] = photoUrl;
-    if (updates.isEmpty) return;
-    await _db.collection('users').doc(uid).update(updates);
+  /// Lets a group's Creator/Admin correct another member's display name
+  /// from that group's Members tab (e.g. one stuck with the
+  /// "নতুন ব্যবহারকারী" fallback from a bad sign-up) — there's no
+  /// self-service profile editor, so this is the only way to fix it.
+  ///
+  /// [viaGroupId] is written alongside the name purely as the security
+  /// rule's proof of authority: it lets the rule verify, from that one
+  /// group's own member doc, that the caller really is that group's
+  /// Creator/Admin and that [targetUid] really is a member of it — rules
+  /// can't search "every group" for that relationship, only check one
+  /// it's told about.
+  Future<void> updateMemberNameAsManager({
+    required String targetUid,
+    required String name,
+    required String viaGroupId,
+  }) async {
+    await _db.collection('users').doc(targetUid).update({
+      'name': name.trim(),
+      'nameLastEditedByGroupId': viaGroupId,
+    });
   }
 
   /// Creates the users/{uid} profile document on first sign-in, for any

@@ -56,14 +56,37 @@ service cloud.firestore {
       return isSignedIn() && myRole(groupId) in ['creator', 'collector'];
     }
 
+    // A group's Creator/Admin correcting another member's display name
+    // from that group's Members tab (there's no self-service profile
+    // editor). [groupId] here is a value the *write itself* supplies (see
+    // isGroupManagerRenamingMember below) — not a path segment — so it
+    // can't reuse myRole()/isGroupCanceller() above, which read it out of
+    // the match block's own {groupId}.
+    function isGroupManagerRenamingUser(groupId, targetUid) {
+      return isSignedIn() && groupId != null &&
+        targetUid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds &&
+        get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role
+          in ['creator', 'admin'];
+    }
+
+    // Only the `name` (+ the groupId proof field itself) may ever change
+    // this way — never email/phone/photoUrl, which stay owner-only.
+    function isGroupManagerRenamingMember(targetUid) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'nameLastEditedByGroupId']) &&
+        isGroupManagerRenamingUser(request.resource.data.get('nameLastEditedByGroupId', null), targetUid);
+    }
+
     // ---------------------------------------------------------------
     // users/{uid} — profile. Any signed-in user may read (needed for
     // member-name lookups and the "add member by phone/email" search);
-    // only the owner may write their own document.
+    // only the owner may write their own document — except a group's
+    // Creator/Admin may also correct another member's name (see above).
     // ---------------------------------------------------------------
     match /users/{uid} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && request.auth.uid == uid;
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() &&
+        (request.auth.uid == uid || isGroupManagerRenamingMember(uid));
       allow delete: if false;
 
       match /fcmTokens/{tokenId} {

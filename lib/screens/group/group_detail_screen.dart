@@ -98,6 +98,7 @@ class _GroupTabsState extends State<_GroupTabs> with SingleTickerProviderStateMi
   bool get _canRecordPayment => widget.me?.canRecordBuilderPayment ?? false;
   bool get _canViewReports => widget.me?.canDownloadReports ?? false;
   bool get _canViewAudit => widget.me?.canViewAuditLog ?? false;
+  bool get _canEditNames => widget.me?.canEditMemberNames ?? false;
 
   @override
   void initState() {
@@ -129,7 +130,7 @@ class _GroupTabsState extends State<_GroupTabs> with SingleTickerProviderStateMi
 
     final tabViews = <Widget>[
       DashboardScreen(group: group, currentUid: uid),
-      MembersTab(group: group, canManage: _canManageGroup, currentUid: uid),
+      MembersTab(group: group, canManage: _canManageGroup, canEditNames: _canEditNames, currentUid: uid),
       ContributionsTab(group: group, canApprove: _canApprove, canCancel: _canCancel, currentUid: uid),
       BuilderPaymentScreen(group: group, canRecord: _canRecordPayment),
       if (_canViewReports) ReportsScreen(group: group, canView: true),

@@ -6,6 +6,7 @@ import '../../l10n/app_strings.dart';
 import '../../models/app_user.dart';
 import '../../models/group_member.dart';
 import '../../models/land_group.dart';
+import '../../services/auth_service.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
@@ -21,8 +22,15 @@ import '../../widgets/status_chip.dart';
 class MembersTab extends StatelessWidget {
   final LandGroup group;
   final bool canManage;
+  final bool canEditNames;
   final String currentUid;
-  const MembersTab({super.key, required this.group, required this.canManage, required this.currentUid});
+  const MembersTab({
+    super.key,
+    required this.group,
+    required this.canManage,
+    required this.canEditNames,
+    required this.currentUid,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +49,7 @@ class MembersTab extends StatelessWidget {
                     group: group,
                     member: m,
                     canManage: canManage,
+                    canEditNames: canEditNames,
                     currentUid: currentUid,
                   )),
               if (exited.isNotEmpty) ...[
@@ -52,6 +61,7 @@ class MembersTab extends StatelessWidget {
                       group: group,
                       member: m,
                       canManage: canManage,
+                      canEditNames: canEditNames,
                       currentUid: currentUid,
                     )),
               ],
@@ -107,8 +117,43 @@ class _MemberTile extends StatelessWidget {
   final LandGroup group;
   final GroupMember member;
   final bool canManage;
+  final bool canEditNames;
   final String currentUid;
-  const _MemberTile({required this.group, required this.member, required this.canManage, required this.currentUid});
+  const _MemberTile({
+    required this.group,
+    required this.member,
+    required this.canManage,
+    required this.canEditNames,
+    required this.currentUid,
+  });
+
+  Future<void> _renameMember(BuildContext context, String currentName) async {
+    final ctrl = TextEditingController(text: currentName);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(S.t(context, 'name')),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(labelText: S.t(context, 'name'), border: const OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.t(context, 'cancel'))),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(ctrl.text.trim()),
+            child: Text(S.t(context, 'save')),
+          ),
+        ],
+      ),
+    );
+    if (newName == null || newName.isEmpty || newName == currentName) return;
+    try {
+      await AuthService().updateMemberNameAsManager(targetUid: member.uid, name: newName, viaGroupId: group.id);
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -140,6 +185,12 @@ class _MemberTile extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (canEditNames && member.isActive)
+                  IconButton(
+                    tooltip: S.t(context, 'edit'),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: () => _renameMember(context, name),
+                  ),
                 StatusChip(label: S.t(context, _roleKey(member.role)), background: roleBg, foreground: roleFg),
                 // The creator's own role/removal is never editable — group
                 // deletion (GroupManagementScreen) is the only way to undo it.

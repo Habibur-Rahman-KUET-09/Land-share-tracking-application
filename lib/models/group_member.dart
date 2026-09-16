@@ -87,6 +87,10 @@ class GroupMember {
   bool get canViewAuditLog => isCreator || isAdmin;
   bool get canRecordBuilderPayment => isCreator || isCollector;
 
+  /// Correct a member's display name from the Members tab — e.g. one stuck
+  /// with the "নতুন ব্যবহারকারী" fallback from a bad sign-up.
+  bool get canEditMemberNames => isCreator || isAdmin;
+
   GroupMember copyWith({
     GroupRole? role,
     double? monthlyAmount,
