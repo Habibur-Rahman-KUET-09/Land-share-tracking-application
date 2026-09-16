@@ -50,16 +50,16 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
-            // R8 code shrinking + unused-resource stripping — the release
-            // APK shipped everything unshrunk before this, which is most of
-            // why it was so large (all of Firebase Auth/Firestore/Storage/
-            // Messaging's code, not just what this app actually calls).
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
+            // R8 minification was tried here for app size, but it broke the
+            // app on a real Android 10 device (wouldn't open at all) — with
+            // no local Android SDK to test against before shipping, R8
+            // stripped something Firebase needed at runtime that the
+            // proguard-rules.pro keep-rules didn't cover. Reverted; the
+            // split-per-ABI build below is the safe part of that size win
+            // and stays. Re-enabling this needs verifying an actual release
+            // build launches on a real device first, not just CI compiling.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
