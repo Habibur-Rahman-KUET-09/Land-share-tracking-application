@@ -7,6 +7,7 @@ import '../../models/app_user.dart';
 import '../../models/group_member.dart';
 import '../../models/land_group.dart';
 import '../../services/group_service.dart';
+import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/status_chip.dart';
@@ -54,34 +55,38 @@ class MembersTab extends StatelessWidget {
                       currentUid: currentUid,
                     )),
               ],
+              if (canManage)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: TextButton.icon(
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (_) => _AddMemberDialog(group: group, invitedBy: currentUid),
+                      ),
+                      icon: const Icon(Icons.add, size: 18, color: AppColors.mutedText),
+                      label: Text(S.t(context, 'add_member'), style: const TextStyle(color: AppColors.mutedText)),
+                    ),
+                  ),
+                ),
             ],
           );
         },
       ),
-      floatingActionButton: canManage
-          ? FloatingActionButton.extended(
-              onPressed: () => showDialog(
-                context: context,
-                builder: (_) => _AddMemberDialog(group: group, invitedBy: currentUid),
-              ),
-              icon: const Icon(Icons.person_add),
-              label: Text(S.t(context, 'add_member')),
-            )
-          : null,
     );
   }
 }
 
-Color _roleColor(GroupRole role) {
+(Color, Color) _roleColors(GroupRole role) {
   switch (role) {
     case GroupRole.creator:
-      return Colors.deepPurple;
+      return (AppColors.roleCreatorBg, AppColors.roleCreatorFg);
     case GroupRole.admin:
-      return Colors.indigo;
+      return (AppColors.roleAdminBg, AppColors.roleAdminFg);
     case GroupRole.collector:
-      return Colors.teal;
+      return (AppColors.roleCollectorBg, AppColors.roleCollectorFg);
     case GroupRole.member:
-      return Colors.blueGrey;
+      return (AppColors.roleMemberBg, AppColors.roleMemberFg);
   }
 }
 
@@ -113,8 +118,13 @@ class _MemberTile extends StatelessWidget {
         final name = snap.data?.exists == true
             ? AppUser.fromMap(member.uid, snap.data!.data()!).name
             : member.uid;
+        final (roleBg, roleFg) = _roleColors(member.role);
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.border, width: 0.6),
+          ),
           child: ListTile(
             title: Text(name),
             subtitle: Text(
@@ -124,7 +134,7 @@ class _MemberTile extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                StatusChip(label: S.t(context, _roleKey(member.role)), color: _roleColor(member.role)),
+                StatusChip(label: S.t(context, _roleKey(member.role)), background: roleBg, foreground: roleFg),
                 // The creator's own role/removal is never editable — group
                 // deletion (GroupManagementScreen) is the only way to undo it.
                 if (canManage && member.isActive && !member.isCreator)

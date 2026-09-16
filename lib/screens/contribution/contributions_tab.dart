@@ -12,6 +12,7 @@ import '../../models/land_group.dart';
 import '../../services/contribution_service.dart';
 import '../../services/group_service.dart';
 import '../../services/storage_service.dart';
+import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/empty_state.dart';
@@ -263,19 +264,35 @@ class _StatusChipFor extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (status) {
       case ContributionStatus.approved:
-        return StatusChip(label: S.t(context, 'status_approved'), color: Colors.green);
+        return StatusChip(
+          label: S.t(context, 'status_approved'),
+          background: AppColors.approvedBg,
+          foreground: AppColors.approvedFg,
+        );
       case ContributionStatus.rejected:
         return Tooltip(
           message: rejectReason ?? '',
-          child: StatusChip(label: S.t(context, 'status_rejected'), color: Colors.red),
+          child: StatusChip(
+            label: S.t(context, 'status_rejected'),
+            background: AppColors.rejectedBg,
+            foreground: AppColors.rejectedFg,
+          ),
         );
       case ContributionStatus.cancelled:
         return Tooltip(
           message: cancelReason ?? '',
-          child: StatusChip(label: S.t(context, 'status_cancelled'), color: Colors.grey),
+          child: StatusChip(
+            label: S.t(context, 'status_cancelled'),
+            background: AppColors.cancelledBg,
+            foreground: AppColors.cancelledFg,
+          ),
         );
       case ContributionStatus.pendingConfirmation:
-        return StatusChip(label: S.t(context, 'status_pending'), color: Colors.orange);
+        return StatusChip(
+          label: S.t(context, 'status_pending'),
+          background: AppColors.pendingBg,
+          foreground: AppColors.pendingFg,
+        );
     }
   }
 }

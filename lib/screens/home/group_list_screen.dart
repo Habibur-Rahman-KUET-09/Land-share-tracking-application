@@ -6,15 +6,25 @@ import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../services/group_service.dart';
+import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/kistify_mark.dart';
 import '../group/create_group_screen.dart';
 import '../group/group_detail_screen.dart';
 
 /// Screen 1 (Home): FR 2.1 "একাধিক group সাপোর্ট" — every group the signed-in
-/// user belongs to (as Admin or Member).
+/// user belongs to.
 class GroupListScreen extends StatelessWidget {
   const GroupListScreen({super.key});
+
+  static const _cardIcons = [
+    Icons.holiday_village_outlined,
+    Icons.groups_outlined,
+    Icons.location_on_outlined,
+    Icons.landscape_outlined,
+    Icons.home_work_outlined,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +34,14 @@ class GroupListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.t(context, 'my_groups')),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const KistifyMark(size: 26),
+            const SizedBox(width: 10),
+            Text(S.t(context, 'my_groups')),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: S.t(context, 'language'),
@@ -54,37 +71,64 @@ class GroupListScreen extends StatelessWidget {
           }
           final groups = snapshot.data ?? [];
           if (groups.isEmpty) {
-            return EmptyState(icon: Icons.landscape_outlined, message: S.t(context, 'no_groups'));
+            return Column(
+              children: [
+                Expanded(child: EmptyState(icon: Icons.landscape_outlined, message: S.t(context, 'no_groups'))),
+                const _NewGroupLink(),
+              ],
+            );
           }
-          return ListView.builder(
+          return ListView(
             padding: const EdgeInsets.all(12),
-            itemCount: groups.length,
-            itemBuilder: (context, index) {
-              final g = groups[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 6),
-                child: ListTile(
-                  title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(
-                    '${g.landLocation} • ${CurrencyFormatter.format(g.totalLandValue)} • '
-                    '${g.totalInstallments} কিস্তি',
+            children: [
+              for (final g in groups)
+                Card(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: AppColors.border, width: 0.6),
                   ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => GroupDetailScreen(groupId: g.id)),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.background,
+                      foregroundColor: AppColors.primary,
+                      child: Icon(_cardIcons[g.id.hashCode.abs() % _cardIcons.length]),
+                    ),
+                    title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                    subtitle: Text(
+                      '${g.landLocation} • ${CurrencyFormatter.format(g.totalLandValue)} • '
+                      '${g.totalInstallments} কিস্তি',
+                    ),
+                    trailing: const Icon(Icons.chevron_right, color: AppColors.mutedText),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => GroupDetailScreen(groupId: g.id)),
+                    ),
                   ),
                 ),
-              );
-            },
+              const _NewGroupLink(),
+            ],
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const CreateGroupScreen()),
+    );
+  }
+}
+
+class _NewGroupLink extends StatelessWidget {
+  const _NewGroupLink();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: TextButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CreateGroupScreen()),
+          ),
+          icon: const Icon(Icons.add, size: 18, color: AppColors.mutedText),
+          label: Text(S.t(context, 'new_group'), style: const TextStyle(color: AppColors.mutedText)),
         ),
-        icon: const Icon(Icons.add),
-        label: Text(S.t(context, 'new_group')),
       ),
     );
   }

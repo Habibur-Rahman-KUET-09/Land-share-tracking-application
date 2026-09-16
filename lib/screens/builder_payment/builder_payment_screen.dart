@@ -78,17 +78,22 @@ class BuilderPaymentScreen extends StatelessWidget {
                         },
                       ),
               ),
+              if (canRecord)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => showDialog(context: context, builder: (_) => _RecordPaymentDialog(group: group)),
+                      icon: const Icon(Icons.add),
+                      label: Text(S.t(context, 'record_builder_payment')),
+                    ),
+                  ),
+                ),
             ],
           );
         },
       ),
-      floatingActionButton: canRecord
-          ? FloatingActionButton.extended(
-              onPressed: () => showDialog(context: context, builder: (_) => _RecordPaymentDialog(group: group)),
-              icon: const Icon(Icons.add),
-              label: Text(S.t(context, 'record_builder_payment')),
-            )
-          : null,
     );
   }
 }

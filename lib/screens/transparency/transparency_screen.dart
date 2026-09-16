@@ -8,6 +8,7 @@ import '../../models/land_group.dart';
 import '../../services/builder_payment_service.dart';
 import '../../services/contribution_service.dart';
 import '../../services/group_service.dart';
+import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/member_name.dart';
 
@@ -37,38 +38,44 @@ class TransparencyScreen extends StatelessWidget {
                 final payments = paymentSnap.data ?? [];
                 final totalCollected = approved.fold<double>(0, (s, c) => s + c.amount);
                 final totalRemitted = payments.fold<double>(0, (s, p) => s + p.amount);
+                final difference = totalCollected - totalRemitted;
 
                 return ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
                     Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           children: [
-                            _row(context, S.t(context, 'total_collected'), totalCollected, bold: true),
-                            const Divider(),
-                            _row(context, S.t(context, 'total_remitted'), totalRemitted, bold: true),
-                            const Divider(),
-                            _row(context, S.t(context, 'difference'), totalCollected - totalRemitted, bold: true),
+                            _row(context, S.t(context, 'total_collected'), totalCollected),
+                            _row(context, S.t(context, 'total_remitted'), totalRemitted),
+                            _row(context, S.t(context, 'difference'), difference, isLast: true, negative: difference < 0),
                           ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text(S.t(context, 'members'), style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      S.t(context, 'members'),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.heading),
+                    ),
                     const SizedBox(height: 8),
                     ...members.map((m) {
                       final paidTotal =
                           approved.where((c) => c.memberId == m.uid).fold<double>(0, (s, c) => s + c.amount);
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: AppColors.border, width: 0.6),
+                        ),
                         child: ListTile(
                           title: MemberName(uid: m.uid),
                           subtitle: Text('${CurrencyFormatter.format(m.monthlyAmount)}/মাস'),
                           trailing: Text(
                             CurrencyFormatter.format(paidTotal),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15, color: AppColors.heading),
                           ),
                         ),
                       );
@@ -83,15 +90,21 @@ class TransparencyScreen extends StatelessWidget {
     );
   }
 
-  Widget _row(BuildContext context, String label, double amount, {bool bold = false}) {
-    final style = TextStyle(fontWeight: bold ? FontWeight.bold : FontWeight.normal, fontSize: bold ? 16 : 14);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+  Widget _row(BuildContext context, String label, double amount, {bool isLast = false, bool negative = false}) {
+    final valueColor = negative ? AppColors.negative : AppColors.heading;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: isLast
+          ? null
+          : const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.divider, width: 0.6))),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: style),
-          Text(CurrencyFormatter.format(amount), style: style),
+          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.heading)),
+          Text(
+            '${negative ? '-' : ''}${CurrencyFormatter.format(amount.abs())}',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: valueColor),
+          ),
         ],
       ),
     );

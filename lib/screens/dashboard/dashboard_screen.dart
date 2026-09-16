@@ -6,9 +6,11 @@ import '../../models/group_member.dart';
 import '../../models/land_group.dart';
 import '../../services/contribution_service.dart';
 import '../../services/group_service.dart';
+import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/due_calculator.dart';
 import '../../widgets/member_name.dart';
+import '../../widgets/status_chip.dart';
 
 /// FR 2.5 (Dashboard & Summary): group-wise should/actual/due, per-member
 /// status, monthly progress, overall % progress.
@@ -60,13 +62,18 @@ class DashboardScreen extends StatelessWidget {
                   title: S.t(context, 'overall_progress'),
                   child: Column(
                     children: [
-                      LinearProgressIndicator(value: overallPercent.toDouble(), minHeight: 10),
-                      const SizedBox(height: 8),
-                      Text('${(overallPercent * 100).toStringAsFixed(1)}%'),
-                      const SizedBox(height: 4),
+                      _ProgressBar(value: overallPercent.toDouble()),
+                      const SizedBox(height: 10),
+                      Text(
+                        '${(overallPercent * 100).toStringAsFixed(1)}%',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: AppColors.heading),
+                      ),
+                      const SizedBox(height: 2),
                       Text(
                         '${CurrencyFormatter.format(totalCollectedAllTime)} / ${CurrencyFormatter.format(group.totalLandValue)}',
-                        style: const TextStyle(color: Colors.grey),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: AppColors.mutedText, fontSize: 12),
                       ),
                     ],
                   ),
@@ -76,13 +83,14 @@ class DashboardScreen extends StatelessWidget {
                   title: '${S.t(context, 'this_month')} (${now.month}/${now.year})',
                   child: Column(
                     children: [
-                      LinearProgressIndicator(
+                      _ProgressBar(
                         value: expectedThisMonth <= 0 ? 0 : (collectedThisMonth / expectedThisMonth).clamp(0, 1.0),
-                        minHeight: 10,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Text(
                         '${CurrencyFormatter.format(collectedThisMonth)} / ${CurrencyFormatter.format(expectedThisMonth)}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.heading),
                       ),
                     ],
                   ),
@@ -92,19 +100,25 @@ class DashboardScreen extends StatelessWidget {
                   title: 'কিস্তি অগ্রগতি',
                   child: Column(
                     children: [
-                      LinearProgressIndicator(
+                      _ProgressBar(
                         value: group.totalInstallments <= 0
                             ? 0
                             : (monthsCompleted / group.totalInstallments).clamp(0, 1.0),
-                        minHeight: 10,
                       ),
-                      const SizedBox(height: 8),
-                      Text('$monthsCompleted / ${group.totalInstallments} মাস সম্পূর্ণ'),
+                      const SizedBox(height: 10),
+                      Text(
+                        '$monthsCompleted / ${group.totalInstallments} মাস সম্পূর্ণ',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 14, color: AppColors.heading),
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('সদস্যদের এই মাসের অবস্থা', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'সদস্যদের এই মাসের অবস্থা',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.heading),
+                ),
                 const SizedBox(height: 8),
                 ...members.map((m) {
                   final status = computeMemberMonthStatus(
@@ -135,22 +149,24 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _memberStatusChip(BuildContext context, MemberMonthStatus status) {
     if (status.isFullyPaid) {
-      return _chip(S.t(context, 'status_approved'), Colors.green);
+      return StatusChip(
+        label: S.t(context, 'status_approved'),
+        background: AppColors.approvedBg,
+        foreground: AppColors.approvedFg,
+      );
     }
     if (status.isPartial) {
-      return _chip(S.t(context, 'status_partial'), Colors.orange);
+      return StatusChip(
+        label: S.t(context, 'status_partial'),
+        background: AppColors.partialBg,
+        foreground: AppColors.partialFg,
+      );
     }
     if (status.isLate) {
-      return _chip(S.t(context, 'status_late'), Colors.red);
+      return StatusChip(label: S.t(context, 'status_late'), background: AppColors.lateBg, foreground: AppColors.lateFg);
     }
-    return _chip(S.t(context, 'status_due'), Colors.blueGrey);
+    return StatusChip(label: S.t(context, 'status_due'), background: AppColors.dueBg, foreground: AppColors.dueFg);
   }
-
-  Widget _chip(String label, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
-        child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
-      );
 }
 
 class _StatCard extends StatelessWidget {
@@ -166,12 +182,29 @@ class _StatCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.heading),
+            ),
             const SizedBox(height: 10),
             child,
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Rounded, flat-track progress bar matching the mockups' `.bar` style.
+class _ProgressBar extends StatelessWidget {
+  final double value;
+  const _ProgressBar({required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: LinearProgressIndicator(value: value, minHeight: 8),
     );
   }
 }
