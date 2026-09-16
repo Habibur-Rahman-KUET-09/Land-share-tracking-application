@@ -115,6 +115,9 @@ class S {
       'invalid_number': 'সঠিক সংখ্যা দিন',
       'saved': 'সংরক্ষণ করা হয়েছে',
       'error_generic': 'কিছু একটা সমস্যা হয়েছে',
+      'notifications': 'নোটিফিকেশন',
+      'no_notifications': 'কোনো নোটিফিকেশন নেই।',
+      'mark_all_read': 'সব পড়া হয়েছে বলে চিহ্নিত করুন',
     },
     'en': {
       'app_title': 'Kistify',
@@ -221,6 +224,9 @@ class S {
       'invalid_number': 'Enter a valid number',
       'saved': 'Saved',
       'error_generic': 'Something went wrong',
+      'notifications': 'Notifications',
+      'no_notifications': 'No notifications yet.',
+      'mark_all_read': 'Mark all as read',
     },
   };
 

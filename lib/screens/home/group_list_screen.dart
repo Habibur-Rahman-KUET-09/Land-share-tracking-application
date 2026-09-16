@@ -6,12 +6,14 @@ import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../services/group_service.dart';
+import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/kistify_mark.dart';
 import '../group/create_group_screen.dart';
 import '../group/group_detail_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 /// Screen 1 (Home): FR 2.1 "একাধিক group সাপোর্ট" — every group the signed-in
 /// user belongs to.
@@ -43,6 +45,23 @@ class GroupListScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          StreamBuilder<int>(
+            stream: NotificationService().watchUnreadCount(uid),
+            builder: (context, snapshot) {
+              final unread = snapshot.data ?? 0;
+              return IconButton(
+                tooltip: S.t(context, 'notifications'),
+                icon: Badge(
+                  isLabelVisible: unread > 0,
+                  label: Text('$unread'),
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: S.t(context, 'language'),
             icon: const Icon(Icons.translate),

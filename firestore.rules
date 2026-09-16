@@ -99,6 +99,17 @@ service cloud.firestore {
       match /fcmTokens/{tokenId} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
+
+      // The in-header notification bell's inbox — only ever written by
+      // functions/index.js via the Admin SDK, which bypasses these rules
+      // entirely, so create is always false here. The owner may mark
+      // entries read (and only that field) or clear their own inbox.
+      match /notifications/{notifId} {
+        allow read, delete: if isSignedIn() && request.auth.uid == uid;
+        allow create: if false;
+        allow update: if isSignedIn() && request.auth.uid == uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      }
     }
 
     // ---------------------------------------------------------------

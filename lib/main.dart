@@ -4,11 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+import 'l10n/app_strings.dart';
 import 'providers/auth_provider.dart';
 import 'providers/locale_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/group_list_screen.dart';
+import 'screens/notifications/notifications_screen.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
+
+// A message arriving while the app is in the foreground never shows a
+// system banner on its own (unlike background/terminated, which Android
+// handles automatically) — these two keys let a global listener show one
+// itself and navigate on tap, from outside any particular screen's
+// BuildContext.
+final navigatorKey = GlobalKey<NavigatorState>();
+final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +28,21 @@ Future<void> main() async {
   // already persists offline by default on Android/iOS; set explicitly so
   // the intent is documented here rather than relying on the SDK default.
   FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
+  NotificationService().onForegroundMessage((message) {
+    final notification = message.notification;
+    if (notification == null) return;
+    scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text('${notification.title}\n${notification.body}'),
+        action: SnackBarAction(
+          label: S.t(navigatorKey.currentContext!, 'notifications'),
+          onPressed: () => navigatorKey.currentState?.push(
+            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+          ),
+        ),
+      ),
+    );
+  });
   runApp(const LandInstallmentApp());
 }
 
@@ -31,6 +57,8 @@ class LandInstallmentApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AppAuthProvider()),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
         debugShowCheckedModeBanner: false,
         title: 'Kistify',
         theme: buildAppTheme(),
