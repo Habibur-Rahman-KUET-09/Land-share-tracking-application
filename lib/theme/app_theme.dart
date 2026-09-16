@@ -17,6 +17,9 @@ class AppColors {
   static const border = Color(0xFFDDDDDD);
   static const divider = Color(0xFFEEEEEE);
   static const negative = Color(0xFFA32D2D);
+  // Header brand accent — the login hero's gold ring color, used as the
+  // active-tab/indicator color against the teal AppBar for contrast.
+  static const gold = Color(0xFFE5B347);
 
   // Status badge pastel pairs (background, foreground).
   static const approvedBg = Color(0xFFE3F4EC);
@@ -76,21 +79,24 @@ ThemeData buildAppTheme() {
       displayColor: AppColors.heading,
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.background,
-      foregroundColor: AppColors.heading,
+      // Same teal brand color as the login screen's hero header, applied
+      // everywhere so every screen reads as one continuous brand identity.
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      titleTextStyle: TextStyle(color: AppColors.heading, fontSize: 17, fontWeight: FontWeight.w500),
-      iconTheme: IconThemeData(color: AppColors.heading),
+      titleTextStyle: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w500),
+      iconTheme: IconThemeData(color: Colors.white),
+      actionsIconTheme: IconThemeData(color: Colors.white),
       // Explicit instead of relying on AppBar's brightness-based default —
-      // pins the status bar to the same off-white as the header itself and
-      // dark icons/text so it reads as one continuous branded bar, on every
+      // pins the status bar to the same teal as the header itself and
+      // light icons/text so it reads as one continuous branded bar, on every
       // screen, instead of occasionally falling back to a plain black strip.
       systemOverlayStyle: SystemUiOverlayStyle(
-        statusBarColor: AppColors.background,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarColor: AppColors.primary,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
     ),
     cardTheme: CardThemeData(
@@ -143,10 +149,12 @@ ThemeData buildAppTheme() {
       style: TextButton.styleFrom(foregroundColor: AppColors.heading),
     ),
     tabBarTheme: const TabBarThemeData(
-      labelColor: AppColors.primary,
-      unselectedLabelColor: AppColors.mutedText,
-      indicatorColor: AppColors.primary,
-      dividerColor: AppColors.divider,
+      // Sits inside the teal AppBar (as GroupDetailScreen's bottom TabBar),
+      // so labels need to read against teal, not the old white surface.
+      labelColor: AppColors.gold,
+      unselectedLabelColor: Colors.white70,
+      indicatorColor: AppColors.gold,
+      dividerColor: Colors.white24,
       labelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
       unselectedLabelStyle: TextStyle(fontSize: 13),
     ),

@@ -92,11 +92,22 @@ service cloud.firestore {
 
       match /members/{memberUid} {
         allow read: if isGroupMember(groupId);
-        // Member management (role, monthly amount, exit) is Creator-only —
-        // the creator's own member doc already satisfies isGroupCreator
-        // because the group document (with them as createdBy) is written
-        // first, in the same create-group call.
-        allow write: if isGroupCreator(groupId);
+        // Bootstrapping: isGroupCreator() can't gate the very first member
+        // doc (the creator's own) — myRole() reads this exact doc via
+        // get(), and it doesn't exist yet while it's being created, so the
+        // check always evaluated to false and blocked every group's first
+        // member write. Allow the group's creator to create ONLY their own
+        // doc, with role 'creator', verified against the group doc's
+        // createdBy field instead (which is already written by then).
+        // Every other member write (adding others, role changes, exits,
+        // any update/delete) requires isGroupCreator(), which works from
+        // here on since the creator's own member doc now exists.
+        allow create: if isGroupCreator(groupId) ||
+          (isSignedIn() &&
+            request.auth.uid == memberUid &&
+            request.resource.data.role == 'creator' &&
+            get(/databases/$(database)/documents/groups/$(groupId)).data.createdBy == request.auth.uid);
+        allow update, delete: if isGroupCreator(groupId);
       }
 
       match /planHistory/{entryId} {

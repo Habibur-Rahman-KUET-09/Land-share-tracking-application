@@ -6,11 +6,11 @@ import '../../l10n/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/kistify_mark.dart';
-import 'phone_otp_screen.dart';
 import 'register_screen.dart';
 
-/// FR 2.1 "User registration/login (Phone number / Email based)" — both
-/// methods are first-class, switchable via the tabs below.
+/// FR 2.1 "User registration/login (Phone number / Email based)" — phone
+/// login is temporarily disabled (kept in the codebase for later); only
+/// email/password and Google are shown.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -18,8 +18,7 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _LoginScreenState extends State<LoginScreen> {
   final _emailFormKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -28,14 +27,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _googleLoading = false;
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
   void dispose() {
-    _tabController.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -133,20 +125,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  TabBar(
-                    controller: _tabController,
-                    tabs: [
-                      Tab(text: S.t(context, 'sign_in_with_phone')),
-                      Tab(text: S.t(context, 'sign_in_with_email')),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  AnimatedBuilder(
-                    animation: _tabController,
-                    builder: (context, _) => _tabController.index == 0
-                        ? const PhoneOtpScreen(mode: PhoneAuthMode.login)
-                        : _emailForm(context),
-                  ),
+                  _emailForm(context),
                   const SizedBox(height: 12),
                   Row(
                     children: [
