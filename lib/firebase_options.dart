@@ -1,9 +1,12 @@
-// Real values for Android, extracted from android/app/google-services.json
-// (project "landsharetrackingsystem"). iOS/web haven't been registered in
-// the Firebase project yet — those two still throw until an app is added
-// for that platform in the Firebase console and this file is updated with
-// its config (or `flutterfire configure` is run with network/login access,
-// see README.md "Firebase setup").
+// Real values for Android and web, taken from the Firebase console
+// (project "landsharetrackingsystem"). iOS hasn't been registered there
+// yet, so it still throws until an app is added for that platform and its
+// config filled in below (or `flutterfire configure` is run with
+// network/login access, see README.md "Firebase setup").
+//
+// These keys are not secrets: every web/Android client ships them, and
+// Firebase identifies rather than authorizes with them. What actually
+// guards the data is firestore.rules / storage.rules.
 //
 // The throw is caught in main() and rendered as a readable message rather
 // than a blank screen, so an unconfigured platform says so out loud.
@@ -14,12 +17,7 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, Tar
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    if (kIsWeb) {
-      throw UnsupportedError(
-        'Firebase Console → Project settings → Your apps → Web এ একটি web app '
-        'যোগ করে তার config এখানে (DefaultFirebaseOptions.web) বসাতে হবে।',
-      );
-    }
+    if (kIsWeb) return web;
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
@@ -35,6 +33,16 @@ class DefaultFirebaseOptions {
         );
     }
   }
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyC2CwfOg1aemsHDwQo3ZL_OE7TRq8JJJdE',
+    appId: '1:510783432326:web:24a779e3f1273e462e5307',
+    messagingSenderId: '510783432326',
+    projectId: 'landsharetrackingsystem',
+    authDomain: 'landsharetrackingsystem.firebaseapp.com',
+    storageBucket: 'landsharetrackingsystem.firebasestorage.app',
+    measurementId: 'G-ES1HYVDMXK',
+  );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDks9FxaKAinOy-5xFkrQkEixvVw9mPlu4',
