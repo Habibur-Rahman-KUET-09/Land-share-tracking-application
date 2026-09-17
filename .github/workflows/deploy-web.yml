@@ -1,0 +1,49 @@
+name: Deploy Web
+
+# Builds the Flutter web bundle and publishes it to Firebase Hosting, so
+# anyone on an iPhone (or any browser) can use Kistify without an app store
+# — Safari > Share > "Add to Home Screen" installs it like a native app.
+#
+# Reuses the same two secrets the functions deploy already uses:
+#   FIREBASE_TOKEN       — from `npx firebase-tools login:ci`
+#   FIREBASE_PROJECT_ID  — Firebase Console > Project settings > Project ID
+#
+# Live at https://<project-id>.web.app
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - 'lib/**'
+      - 'web/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'firebase.json'
+      - '.github/workflows/deploy-web.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - run: flutter analyze
+
+      # No renderer flag on purpose: current Flutter always uses CanvasKit
+      # (which shapes Bengali conjuncts correctly), and the old
+      # --web-renderer flag was removed, so passing it now fails the build.
+      - run: flutter build web --release
+
+      - run: npx firebase-tools deploy --only hosting --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN" --non-interactive
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -146,14 +144,14 @@ class _RecordPaymentDialogState extends State<_RecordPaymentDialog> {
   final _amountCtrl = TextEditingController();
   final _refCtrl = TextEditingController();
   DateTime _date = DateTime.now();
-  File? _receiptFile;
+  XFile? _receiptFile;
   bool _saving = false;
   String? _error;
 
   Future<void> _pickReceipt() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if (picked != null) setState(() => _receiptFile = File(picked.path));
+    if (picked != null) setState(() => _receiptFile = picked);
   }
 
   Future<void> _save() async {

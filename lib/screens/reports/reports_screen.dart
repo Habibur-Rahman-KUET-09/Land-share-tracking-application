@@ -65,7 +65,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
+  /// iPadOS puts the share sheet in a popover and needs to know what to
+  /// anchor it to; with nothing to point at it refuses to open. The screen's
+  /// own rect is a reasonable anchor — the sheet lands over the report.
+  /// Phones and browsers ignore this entirely.
+  Rect? _sharePosition() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
   Future<void> _export({required bool pdf}) {
+    final anchor = _sharePosition();
     return _withExportData((members, approved, payments, names) {
       return pdf
           ? PdfExportService.generateAndShare(
@@ -74,6 +85,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               approvedContributions: approved,
               builderPayments: payments,
               memberNames: names,
+              sharePosition: anchor,
             )
           : ExcelExportService.generateAndShare(
               group: widget.group,
@@ -81,11 +93,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
               approvedContributions: approved,
               builderPayments: payments,
               memberNames: names,
+              sharePosition: anchor,
             );
     });
   }
 
   Future<void> _exportMatrix({required bool pdf}) {
+    final anchor = _sharePosition();
     return _withExportData((members, approved, payments, names) {
       return pdf
           ? PdfExportService.generateMonthlyMatrixAndShare(
@@ -94,6 +108,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               approvedContributions: approved,
               builderPayments: payments,
               memberNames: names,
+              sharePosition: anchor,
             )
           : ExcelExportService.generateMonthlyMatrixAndShare(
               group: widget.group,
@@ -101,6 +116,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               approvedContributions: approved,
               builderPayments: payments,
               memberNames: names,
+              sharePosition: anchor,
             );
     });
   }

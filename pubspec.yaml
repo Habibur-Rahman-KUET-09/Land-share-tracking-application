@@ -54,6 +54,14 @@ dependencies:
   # Receipt photo upload (camera/gallery)
   image_picker: ^1.1.2
 
+  # XFile — one picked-image type that works on mobile and web alike
+  # (a web pick has no filesystem path, so dart:io File can't be used).
+  cross_file: ^0.3.4+2
+
+  # Browser APIs (Blob/anchor download) for the web build's file export —
+  # see lib/utils/byte_share_web.dart.
+  web: ^1.1.0
+
   # PDF/Excel report export (FR 2.7)
   pdf: ^3.11.1
   printing: ^5.13.4

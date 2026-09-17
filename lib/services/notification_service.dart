@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../models/app_notification.dart';
 
@@ -19,11 +20,22 @@ class NotificationService {
       : _messaging = messaging ?? FirebaseMessaging.instance,
         _db = db ?? FirebaseFirestore.instance;
 
+  /// Best-effort: push registration must never be able to block sign-in.
+  ///
+  /// getToken() throws outright where push isn't set up or isn't allowed —
+  /// a browser with notifications denied, an iOS build without an APNs key,
+  /// a web build with no VAPID key configured. None of that should cost the
+  /// user their session: the in-app bell reads the Firestore inbox
+  /// (see [watchNotifications]) and keeps working either way.
   Future<void> initForUser(String uid) async {
-    await _messaging.requestPermission(alert: true, badge: true, sound: true);
-    final token = await _messaging.getToken();
-    if (token != null) await _saveToken(uid, token);
-    _messaging.onTokenRefresh.listen((t) => _saveToken(uid, t));
+    try {
+      await _messaging.requestPermission(alert: true, badge: true, sound: true);
+      final token = await _messaging.getToken();
+      if (token != null) await _saveToken(uid, token);
+      _messaging.onTokenRefresh.listen((t) => _saveToken(uid, t));
+    } catch (e) {
+      debugPrint('Push registration unavailable, continuing without it: $e');
+    }
   }
 
   Future<void> _saveToken(String uid, String token) async {
@@ -36,8 +48,16 @@ class NotificationService {
   /// Foreground messages don't auto-show a system banner — call this in
   /// main.dart and surface [RemoteMessage.notification] however the app's
   /// UI layer prefers (e.g. a SnackBar).
+  ///
+  /// Guarded for the same reason as [initForUser]: this runs during startup,
+  /// and a browser that can't do push at all throws here — which would take
+  /// the whole app down before it ever rendered.
   void onForegroundMessage(void Function(RemoteMessage message) handler) {
-    FirebaseMessaging.onMessage.listen(handler);
+    try {
+      FirebaseMessaging.onMessage.listen(handler);
+    } catch (e) {
+      debugPrint('Foreground push listener unavailable: $e');
+    }
   }
 
   CollectionReference<Map<String, dynamic>> _inbox(String uid) =>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <!--
+    Rewritten by `flutter build web` to whatever --base-href is passed.
+    Firebase Hosting serves us from the domain root, so it stays "/".
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Kistify — বন্ধুদের সাথে জমির কিস্তি, সঞ্চয় ও সমিতির হিসাব এক জায়গায়।">
+
+  <!-- iOS "Add to Home Screen": without these the shortcut opens in a
+       Safari tab with the address bar, instead of standalone like an app. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kistify">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- viewport-fit=cover lets the app paint under the notch/home indicator,
+       matching the edge-to-edge look the native app already has. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0F6E5C">
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="manifest" href="manifest.json">
+  <title>Kistify</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #0F6E5C;
+      overscroll-behavior: none;
+    }
+
+    /* The Flutter bundle is a couple of megabytes; on a slow connection
+       that is several seconds of blank screen. This is a plain-CSS splash
+       in the brand teal that disappears the moment Flutter mounts its
+       <flutter-view> — no JS hook into the bootstrap needed. */
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: #FFFFFF;
+    }
+
+    #loading img {
+      width: 96px;
+      height: 96px;
+      border-radius: 24px;
+    }
+
+    #loading .spinner {
+      width: 26px;
+      height: 26px;
+      border: 3px solid rgba(255, 255, 255, 0.28);
+      border-top-color: #E5B347;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    body:has(flutter-view) #loading { display: none; }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <img src="icons/Icon-192.png" alt="Kistify">
+    <div class="spinner"></div>
+  </div>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

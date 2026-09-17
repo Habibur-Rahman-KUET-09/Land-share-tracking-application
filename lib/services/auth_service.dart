@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/app_user.dart';
@@ -61,6 +62,15 @@ class AuthService {
   Future<UserCredential> signInWithGoogle() async {
     _bootstrapping = true;
     try {
+      // The google_sign_in plugin's signIn() doesn't work in a browser —
+      // there, Firebase drives the whole flow through a popup and hands
+      // back a credential directly.
+      if (kIsWeb) {
+        final result = await _auth.signInWithPopup(GoogleAuthProvider());
+        final user = result.user!;
+        await ensureProfile(user, name: user.displayName, email: user.email);
+        return result;
+      }
       final account = await _googleSignIn.signIn();
       if (account == null) {
         throw FirebaseAuthException(code: 'sign-in-canceled', message: 'Google sign-in was canceled.');

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -411,7 +409,7 @@ class _SubmitContributionDialogState extends State<_SubmitContributionDialog> {
   PaymentMethod _method = PaymentMethod.bkash;
   int _month = DateTime.now().month;
   int _year = DateTime.now().year;
-  File? _receiptFile;
+  XFile? _receiptFile;
   bool _saving = false;
   String? _error;
 
@@ -453,7 +451,7 @@ class _SubmitContributionDialogState extends State<_SubmitContributionDialog> {
   Future<void> _pickReceipt() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if (picked != null) setState(() => _receiptFile = File(picked.path));
+    if (picked != null) setState(() => _receiptFile = picked);
   }
 
   Future<void> _submit() async {

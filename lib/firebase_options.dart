@@ -1,9 +1,12 @@
 // Real values for Android, extracted from android/app/google-services.json
 // (project "landsharetrackingsystem"). iOS/web haven't been registered in
-// the Firebase project yet (FRD: "Android প্রথমে") — those two still throw
-// until an app is added for that platform in the Firebase console and this
-// file is updated with its config (or `flutterfire configure` is run with
-// network/login access, see README.md "Firebase setup").
+// the Firebase project yet — those two still throw until an app is added
+// for that platform in the Firebase console and this file is updated with
+// its config (or `flutterfire configure` is run with network/login access,
+// see README.md "Firebase setup").
+//
+// The throw is caught in main() and rendered as a readable message rather
+// than a blank screen, so an unconfigured platform says so out loud.
 //
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
@@ -13,9 +16,8 @@ class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       throw UnsupportedError(
-        'No Firebase web app has been registered yet in the '
-        'landsharetrackingsystem project — add one in the Firebase console '
-        '(Project settings > Your apps > Web) and fill in DefaultFirebaseOptions.web.',
+        'Firebase Console → Project settings → Your apps → Web এ একটি web app '
+        'যোগ করে তার config এখানে (DefaultFirebaseOptions.web) বসাতে হবে।',
       );
     }
     switch (defaultTargetPlatform) {

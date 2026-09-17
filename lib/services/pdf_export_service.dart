@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/widgets.dart' show Rect;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -166,12 +167,15 @@ class PdfExportService {
     return doc;
   }
 
+  /// [sharePosition] anchors the iPad share popover — iPadOS has nowhere to
+  /// put it otherwise. Ignored on phones and on the web.
   static Future<void> generateAndShare({
     required LandGroup group,
     required List<GroupMember> members,
     required List<Contribution> approvedContributions,
     required List<BuilderPayment> builderPayments,
     required Map<String, String> memberNames,
+    Rect? sharePosition,
   }) async {
     final doc = await _buildDocument(
       group: group,
@@ -183,6 +187,7 @@ class PdfExportService {
     await Printing.sharePdf(
       bytes: await doc.save(),
       filename: '${group.name} — রিপোর্ট.pdf',
+      bounds: sharePosition,
     );
   }
 
@@ -340,6 +345,7 @@ class PdfExportService {
     required List<Contribution> approvedContributions,
     required List<BuilderPayment> builderPayments,
     required Map<String, String> memberNames,
+    Rect? sharePosition,
   }) async {
     final doc = await _buildMonthlyMatrixDocument(
       group: group,
@@ -351,6 +357,7 @@ class PdfExportService {
     await Printing.sharePdf(
       bytes: await doc.save(),
       filename: '${group.name} — মাসভিত্তিক রিপোর্ট.pdf',
+      bounds: sharePosition,
     );
   }
 }

@@ -23,7 +23,16 @@ final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    // Without this the app dies before its first frame and the user just
+    // stares at a blank screen with no idea why. The usual cause is a
+    // platform that hasn't been registered in the Firebase project yet
+    // (see DefaultFirebaseOptions), which says exactly that in its message.
+    runApp(_StartupFailure(details: '$e'));
+    return;
+  }
   // NFR "অফলাইনেও যেন basic data entry করা যায় (পরে sync)" — Firestore
   // already persists offline by default on Android/iOS; set explicitly so
   // the intent is documented here rather than relying on the SDK default.
@@ -44,6 +53,46 @@ Future<void> main() async {
     );
   });
   runApp(const LandInstallmentApp());
+}
+
+/// Shown in place of the app when Firebase itself can't start — deliberately
+/// dependency-free (no providers, no l10n, no theme), because none of that is
+/// initialized at the point this is needed.
+class _StartupFailure extends StatelessWidget {
+  final String details;
+  const _StartupFailure({required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off, size: 48, color: Color(0xFFA32D2D)),
+                const SizedBox(height: 16),
+                const Text(
+                  'অ্যাপটি Firebase এর সাথে সংযোগ করতে পারেনি।',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  details,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class LandInstallmentApp extends StatelessWidget {

@@ -1,19 +1,22 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:excel/excel.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:flutter/widgets.dart' show Rect;
 
 import '../models/builder_payment.dart';
 import '../models/contribution.dart';
 import '../models/group_member.dart';
 import '../models/land_group.dart';
+import '../utils/byte_share.dart';
 import '../utils/currency_formatter.dart';
 
 /// FR 2.7 "Export করার সুবিধা (PDF/Excel)" — the Excel counterpart of
 /// [PdfExportService], same content in spreadsheet form.
 class ExcelExportService {
-  static Future<File> generate({
+  static const _xlsxMimeType =
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+  static Future<Uint8List> generate({
     required LandGroup group,
     required List<GroupMember> members,
     required List<Contribution> approvedContributions,
@@ -73,11 +76,7 @@ class ExcelExportService {
     sheet.appendRow([TextCellValue('বিল্ডারকে মোট জমা'), DoubleCellValue(totalRemitted)]);
     sheet.appendRow([TextCellValue('পার্থক্য'), DoubleCellValue(totalCollected - totalRemitted)]);
 
-    final bytes = excel.save();
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/${group.name} — রিপোর্ট.xlsx');
-    await file.writeAsBytes(bytes!, flush: true);
-    return file;
+    return Uint8List.fromList(excel.save()!);
   }
 
   static Future<void> generateAndShare({
@@ -86,15 +85,22 @@ class ExcelExportService {
     required List<Contribution> approvedContributions,
     required List<BuilderPayment> builderPayments,
     required Map<String, String> memberNames,
+    Rect? sharePosition,
   }) async {
-    final file = await generate(
+    final bytes = await generate(
       group: group,
       members: members,
       approvedContributions: approvedContributions,
       builderPayments: builderPayments,
       memberNames: memberNames,
     );
-    await Share.shareXFiles([XFile(file.path)], text: '${group.name} — রিপোর্ট');
+    await shareBytes(
+      bytes: bytes,
+      filename: '${group.name} — রিপোর্ট.xlsx',
+      mimeType: _xlsxMimeType,
+      text: '${group.name} — রিপোর্ট',
+      sharePosition: sharePosition,
+    );
   }
 
   static const _monthAbbr = [
@@ -104,7 +110,7 @@ class ExcelExportService {
 
   /// Excel counterpart of [PdfExportService]'s monthly matrix — see that
   /// method's doc comment for the layout this mirrors.
-  static Future<File> generateMonthlyMatrix({
+  static Future<Uint8List> generateMonthlyMatrix({
     required LandGroup group,
     required List<GroupMember> members,
     required List<Contribution> approvedContributions,
@@ -181,11 +187,7 @@ class ExcelExportService {
       TextCellValue(''),
     ]);
 
-    final bytes = excel.save();
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/${group.name} — মাসভিত্তিক রিপোর্ট.xlsx');
-    await file.writeAsBytes(bytes!, flush: true);
-    return file;
+    return Uint8List.fromList(excel.save()!);
   }
 
   static Future<void> generateMonthlyMatrixAndShare({
@@ -194,14 +196,21 @@ class ExcelExportService {
     required List<Contribution> approvedContributions,
     required List<BuilderPayment> builderPayments,
     required Map<String, String> memberNames,
+    Rect? sharePosition,
   }) async {
-    final file = await generateMonthlyMatrix(
+    final bytes = await generateMonthlyMatrix(
       group: group,
       members: members,
       approvedContributions: approvedContributions,
       builderPayments: builderPayments,
       memberNames: memberNames,
     );
-    await Share.shareXFiles([XFile(file.path)], text: '${group.name} — মাসভিত্তিক রিপোর্ট');
+    await shareBytes(
+      bytes: bytes,
+      filename: '${group.name} — মাসভিত্তিক রিপোর্ট.xlsx',
+      mimeType: _xlsxMimeType,
+      text: '${group.name} — মাসভিত্তিক রিপোর্ট',
+      sharePosition: sharePosition,
+    );
   }
 }
