@@ -8,7 +8,9 @@ name: Deploy Web
 #   FIREBASE_TOKEN       — from `npx firebase-tools login:ci`
 #   FIREBASE_PROJECT_ID  — Firebase Console > Project settings > Project ID
 #
-# Live at https://<project-id>.web.app
+# Publishes to both Hosting sites configured in firebase.json:
+#   https://kistify.web.app                  <- the one to share
+#   https://landsharetrackingsystem.web.app  <- project default, kept in sync
 
 on:
   workflow_dispatch: {}
