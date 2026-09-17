@@ -7,4 +7,6 @@
 ///
 /// PDF export doesn't need this: `Printing.sharePdf` already does the
 /// equivalent on every platform.
+library;
+
 export 'byte_share_io.dart' if (dart.library.js_interop) 'byte_share_web.dart';
