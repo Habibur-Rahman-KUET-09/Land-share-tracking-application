@@ -97,6 +97,24 @@ class GroupService {
     return snap.exists ? LandGroup.fromMap(snap.id, snap.data()!) : null;
   }
 
+  /// Creator-only, enforced by firestore.rules (group document update is
+  /// gated on request.auth.uid == createdBy).
+  Future<void> renameGroup({
+    required String groupId,
+    required String name,
+    required String editedBy,
+  }) async {
+    await _groups.doc(groupId).update({'name': name.trim()});
+    await _audit.log(
+      groupId: groupId,
+      actorId: editedBy,
+      action: 'rename_group',
+      targetType: 'group',
+      targetId: groupId,
+      details: 'গ্রুপের নাম পরিবর্তন করে "${name.trim()}" করা হয়েছে',
+    );
+  }
+
   /// FR Finalized Decision 4: edits are snapshotted to planHistory first, so
   /// the previous plan is always recoverable/visible (FR 2.8 transparency).
   Future<void> editPlan({

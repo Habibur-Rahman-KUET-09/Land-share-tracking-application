@@ -118,6 +118,7 @@ class S {
       'notifications': 'নোটিফিকেশন',
       'no_notifications': 'কোনো নোটিফিকেশন নেই।',
       'mark_all_read': 'সব পড়া হয়েছে বলে চিহ্নিত করুন',
+      'monthly_matrix_report': 'মাসভিত্তিক ম্যাট্রিক্স রিপোর্ট',
     },
     'en': {
       'app_title': 'Kistify',
@@ -227,6 +228,7 @@ class S {
       'notifications': 'Notifications',
       'no_notifications': 'No notifications yet.',
       'mark_all_read': 'Mark all as read',
+      'monthly_matrix_report': 'Monthly Matrix Report',
     },
   };
 

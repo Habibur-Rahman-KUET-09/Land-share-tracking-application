@@ -13,24 +13,34 @@ import '../../services/builder_payment_service.dart';
 import '../../services/storage_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../widgets/date_range_filter_bar.dart';
 import '../../widgets/empty_state.dart';
 
 /// FR 2.4: what an Admin actually remitted to the land's builder/developer.
-class BuilderPaymentScreen extends StatelessWidget {
+class BuilderPaymentScreen extends StatefulWidget {
   final LandGroup group;
   final bool canRecord;
   const BuilderPaymentScreen({super.key, required this.group, required this.canRecord});
 
   @override
+  State<BuilderPaymentScreen> createState() => _BuilderPaymentScreenState();
+}
+
+class _BuilderPaymentScreenState extends State<BuilderPaymentScreen> {
+  DateTimeRange? _range;
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder<List<BuilderPayment>>(
-        stream: BuilderPaymentService().watch(group.id),
+        stream: BuilderPaymentService().watch(widget.group.id),
         builder: (context, snapshot) {
-          final payments = snapshot.data ?? [];
+          final payments =
+              (snapshot.data ?? []).where((p) => isInDateRange(p.date, _range)).toList();
           final total = payments.fold<double>(0, (sum, p) => sum + p.amount);
           return Column(
             children: [
+              DateRangeFilterBar(range: _range, onChanged: (r) => setState(() => _range = r)),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Card(
@@ -98,13 +108,16 @@ class BuilderPaymentScreen extends StatelessWidget {
                         },
                       ),
               ),
-              if (canRecord)
+              if (widget.canRecord)
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () => showDialog(context: context, builder: (_) => _RecordPaymentDialog(group: group)),
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (_) => _RecordPaymentDialog(group: widget.group),
+                      ),
                       icon: const Icon(Icons.add),
                       label: Text(S.t(context, 'record_builder_payment')),
                     ),

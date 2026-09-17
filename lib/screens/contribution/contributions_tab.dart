@@ -15,6 +15,7 @@ import '../../services/storage_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/confirm_dialog.dart';
+import '../../widgets/date_range_filter_bar.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/status_chip.dart';
 
@@ -40,6 +41,7 @@ class ContributionsTab extends StatefulWidget {
 
 class _ContributionsTabState extends State<ContributionsTab> {
   bool _showApprovals = false;
+  DateTimeRange? _range;
 
   @override
   Widget build(BuildContext context) {
@@ -58,10 +60,16 @@ class _ContributionsTabState extends State<ContributionsTab> {
                 onSelectionChanged: (s) => setState(() => _showApprovals = s.first),
               ),
             ),
+          DateRangeFilterBar(range: _range, onChanged: (r) => setState(() => _range = r)),
           Expanded(
             child: _showApprovals
-                ? _ApprovalsList(group: widget.group, currentUid: widget.currentUid)
-                : _MyContributions(group: widget.group, currentUid: widget.currentUid, canCancel: widget.canCancel),
+                ? _ApprovalsList(group: widget.group, currentUid: widget.currentUid, range: _range)
+                : _MyContributions(
+                    group: widget.group,
+                    currentUid: widget.currentUid,
+                    canCancel: widget.canCancel,
+                    range: _range,
+                  ),
           ),
         ],
       ),
@@ -83,7 +91,13 @@ class _MyContributions extends StatelessWidget {
   final LandGroup group;
   final String currentUid;
   final bool canCancel;
-  const _MyContributions({required this.group, required this.currentUid, required this.canCancel});
+  final DateTimeRange? range;
+  const _MyContributions({
+    required this.group,
+    required this.currentUid,
+    required this.canCancel,
+    required this.range,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +107,8 @@ class _MyContributions extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final entries = snapshot.data ?? [];
+        final entries =
+            (snapshot.data ?? []).where((c) => isInDateRange(c.submittedAt, range)).toList();
         if (entries.isEmpty) {
           return EmptyState(icon: Icons.payments_outlined, message: S.t(context, 'no_pending_approvals'));
         }
@@ -147,14 +162,16 @@ class _MyContributions extends StatelessWidget {
 class _ApprovalsList extends StatelessWidget {
   final LandGroup group;
   final String currentUid;
-  const _ApprovalsList({required this.group, required this.currentUid});
+  final DateTimeRange? range;
+  const _ApprovalsList({required this.group, required this.currentUid, required this.range});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Contribution>>(
       stream: ContributionService().watchPendingApprovals(group.id),
       builder: (context, snapshot) {
-        final entries = snapshot.data ?? [];
+        final entries =
+            (snapshot.data ?? []).where((c) => isInDateRange(c.submittedAt, range)).toList();
         if (entries.isEmpty) {
           return EmptyState(icon: Icons.check_circle_outline, message: S.t(context, 'no_pending_approvals'));
         }

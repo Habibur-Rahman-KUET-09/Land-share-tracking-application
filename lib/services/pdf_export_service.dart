@@ -182,4 +182,171 @@ class PdfExportService {
       filename: '${group.name} — রিপোর্ট.pdf',
     );
   }
+
+  static const _monthAbbr = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  /// One row per calendar month from the group's creation to now, one
+  /// column per active member showing their approved contributions that
+  /// month, a Total column, and a Remark column auto-filled from that
+  /// month's recorded builder payments — matches the owner's own tracking
+  /// spreadsheet layout, minus the down-payment/installment split (kept as
+  /// a single running total, per their own call on that distinction).
+  static Future<pw.Document> _buildMonthlyMatrixDocument({
+    required LandGroup group,
+    required List<GroupMember> members,
+    required List<Contribution> approvedContributions,
+    required List<BuilderPayment> builderPayments,
+    required Map<String, String> memberNames,
+  }) async {
+    await _ensureFonts();
+    final doc = pw.Document();
+    final numberStyle = pw.TextStyle(fontSize: 8.5, font: _regular);
+    final totalStyle = pw.TextStyle(fontSize: 8.5, font: _bold, fontWeight: pw.FontWeight.bold);
+
+    Future<pw.Widget> label(String text, {double fontSize = 8.5, bool bold = false}) {
+      return BanglaPdfText.widget(text, fontSize: fontSize, bold: bold);
+    }
+
+    pw.Widget cell(pw.Widget child, {pw.Alignment alignment = pw.Alignment.centerLeft}) {
+      return pw.Container(
+        alignment: alignment,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: child,
+      );
+    }
+
+    final activeMembers = members.where((m) => m.isActive).toList();
+    final subtitle = await label(
+      '${group.name} — ${group.landLocation} — মাসভিত্তিক পেমেন্ট ম্যাট্রিক্স',
+      fontSize: 14,
+      bold: true,
+    );
+
+    final months = <DateTime>[];
+    var cur = DateTime(group.createdAt.year, group.createdAt.month);
+    final lastMonth = DateTime(DateTime.now().year, DateTime.now().month);
+    while (!cur.isAfter(lastMonth)) {
+      months.add(cur);
+      cur = DateTime(cur.year, cur.month + 1);
+    }
+
+    final headerCells = <pw.Widget>[
+      cell(await label('ক্র.', bold: true)),
+      cell(await label('মাস', bold: true)),
+    ];
+    for (final m in activeMembers) {
+      headerCells.add(cell(await label(memberNames[m.uid] ?? m.uid, bold: true), alignment: pw.Alignment.center));
+    }
+    headerCells.add(cell(await label('মোট', bold: true), alignment: pw.Alignment.center));
+    headerCells.add(cell(await label('রেফারেন্স', bold: true)));
+    final headerRow = pw.TableRow(decoration: const pw.BoxDecoration(color: PdfColors.grey300), children: headerCells);
+
+    final rows = <pw.TableRow>[];
+    double grandTotal = 0;
+    final memberGrandTotals = {for (final m in activeMembers) m.uid: 0.0};
+
+    for (var i = 0; i < months.length; i++) {
+      final m = months[i];
+      final rowContribs = approvedContributions.where((c) => c.year == m.year && c.month == m.month).toList();
+      double rowTotal = 0;
+      final cells = <pw.Widget>[
+        cell(pw.Text('${i + 1}', style: numberStyle)),
+        cell(pw.Text('${_monthAbbr[m.month - 1]}-${m.year}', style: numberStyle)),
+      ];
+      for (final mem in activeMembers) {
+        final amt = rowContribs.where((c) => c.memberId == mem.uid).fold<double>(0, (s, c) => s + c.amount);
+        rowTotal += amt;
+        memberGrandTotals[mem.uid] = (memberGrandTotals[mem.uid] ?? 0) + amt;
+        cells.add(
+          cell(
+            pw.Text(amt == 0 ? '-' : CurrencyFormatter.format(amt, withSymbol: false), style: numberStyle),
+            alignment: pw.Alignment.centerRight,
+          ),
+        );
+      }
+      grandTotal += rowTotal;
+      cells.add(
+        cell(
+          pw.Text(rowTotal == 0 ? '-' : CurrencyFormatter.format(rowTotal, withSymbol: false), style: totalStyle),
+          alignment: pw.Alignment.centerRight,
+        ),
+      );
+
+      final monthPayments = builderPayments.where((p) => p.date.year == m.year && p.date.month == m.month).toList();
+      final remarkText = monthPayments
+          .map(
+            (p) =>
+                'বিল্ডারকে ${CurrencyFormatter.format(p.amount, withSymbol: false)} জমা'
+                '${(p.referenceNumber?.isNotEmpty ?? false) ? ' (রেফ: ${p.referenceNumber})' : ''}',
+          )
+          .join('; ');
+      cells.add(cell(await label(remarkText)));
+
+      rows.add(pw.TableRow(children: cells));
+    }
+
+    final totalCells = <pw.Widget>[cell(pw.SizedBox()), cell(await label('সর্বমোট', bold: true))];
+    for (final mem in activeMembers) {
+      totalCells.add(
+        cell(
+          pw.Text(CurrencyFormatter.format(memberGrandTotals[mem.uid] ?? 0, withSymbol: false), style: totalStyle),
+          alignment: pw.Alignment.centerRight,
+        ),
+      );
+    }
+    totalCells.add(
+      cell(
+        pw.Text(CurrencyFormatter.format(grandTotal, withSymbol: false), style: totalStyle),
+        alignment: pw.Alignment.centerRight,
+      ),
+    );
+    totalCells.add(cell(pw.SizedBox()));
+    final totalRow = pw.TableRow(decoration: const pw.BoxDecoration(color: PdfColors.grey200), children: totalCells);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        build: (context) => [
+          subtitle,
+          pw.SizedBox(height: 16),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+            columnWidths: {
+              0: const pw.FixedColumnWidth(24),
+              1: const pw.FixedColumnWidth(52),
+              for (var i = 0; i < activeMembers.length; i++) 2 + i: const pw.FlexColumnWidth(1),
+              2 + activeMembers.length: const pw.FlexColumnWidth(1.2),
+              3 + activeMembers.length: const pw.FlexColumnWidth(2.5),
+            },
+            children: [headerRow, ...rows, totalRow],
+          ),
+        ],
+      ),
+    );
+
+    return doc;
+  }
+
+  static Future<void> generateMonthlyMatrixAndShare({
+    required LandGroup group,
+    required List<GroupMember> members,
+    required List<Contribution> approvedContributions,
+    required List<BuilderPayment> builderPayments,
+    required Map<String, String> memberNames,
+  }) async {
+    final doc = await _buildMonthlyMatrixDocument(
+      group: group,
+      members: members,
+      approvedContributions: approvedContributions,
+      builderPayments: builderPayments,
+      memberNames: memberNames,
+    );
+    await Printing.sharePdf(
+      bytes: await doc.save(),
+      filename: '${group.name} — মাসভিত্তিক রিপোর্ট.pdf',
+    );
+  }
 }

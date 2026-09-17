@@ -41,7 +41,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return names;
   }
 
-  Future<void> _export({required bool pdf}) async {
+  Future<void> _withExportData(
+    Future<void> Function(
+      List<GroupMember> members,
+      List<Contribution> approved,
+      List<BuilderPayment> payments,
+      Map<String, String> names,
+    )
+    share,
+  ) async {
     setState(() => _exporting = true);
     try {
       final members = await GroupService().watchMembers(widget.group.id).first;
@@ -49,29 +57,52 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final approved = contributions.where((c) => c.status == ContributionStatus.approved).toList();
       final payments = await BuilderPaymentService().watch(widget.group.id).first;
       final names = await _resolveMemberNames(members);
-
-      if (pdf) {
-        await PdfExportService.generateAndShare(
-          group: widget.group,
-          members: members,
-          approvedContributions: approved,
-          builderPayments: payments,
-          memberNames: names,
-        );
-      } else {
-        await ExcelExportService.generateAndShare(
-          group: widget.group,
-          members: members,
-          approvedContributions: approved,
-          builderPayments: payments,
-          memberNames: names,
-        );
-      }
+      await share(members, approved, payments, names);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
+  }
+
+  Future<void> _export({required bool pdf}) {
+    return _withExportData((members, approved, payments, names) {
+      return pdf
+          ? PdfExportService.generateAndShare(
+              group: widget.group,
+              members: members,
+              approvedContributions: approved,
+              builderPayments: payments,
+              memberNames: names,
+            )
+          : ExcelExportService.generateAndShare(
+              group: widget.group,
+              members: members,
+              approvedContributions: approved,
+              builderPayments: payments,
+              memberNames: names,
+            );
+    });
+  }
+
+  Future<void> _exportMatrix({required bool pdf}) {
+    return _withExportData((members, approved, payments, names) {
+      return pdf
+          ? PdfExportService.generateMonthlyMatrixAndShare(
+              group: widget.group,
+              members: members,
+              approvedContributions: approved,
+              builderPayments: payments,
+              memberNames: names,
+            )
+          : ExcelExportService.generateMonthlyMatrixAndShare(
+              group: widget.group,
+              members: members,
+              approvedContributions: approved,
+              builderPayments: payments,
+              memberNames: names,
+            );
+    });
   }
 
   @override
@@ -101,6 +132,31 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     icon: const Icon(Icons.grid_on_outlined),
                     label: Text(S.t(context, 'export_excel')),
                     onPressed: _exporting ? null : () => _export(pdf: false),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              S.t(context, 'monthly_matrix_report'),
+              style: const TextStyle(fontSize: 13, color: AppColors.mutedText),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: Text(S.t(context, 'export_pdf')),
+                    onPressed: _exporting ? null : () => _exportMatrix(pdf: true),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.grid_on_outlined),
+                    label: Text(S.t(context, 'export_excel')),
+                    onPressed: _exporting ? null : () => _exportMatrix(pdf: false),
                   ),
                 ),
               ],

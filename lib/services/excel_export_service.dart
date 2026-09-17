@@ -8,6 +8,7 @@ import '../models/builder_payment.dart';
 import '../models/contribution.dart';
 import '../models/group_member.dart';
 import '../models/land_group.dart';
+import '../utils/currency_formatter.dart';
 
 /// FR 2.7 "Export করার সুবিধা (PDF/Excel)" — the Excel counterpart of
 /// [PdfExportService], same content in spreadsheet form.
@@ -91,5 +92,112 @@ class ExcelExportService {
       memberNames: memberNames,
     );
     await Share.shareXFiles([XFile(file.path)], text: '${group.name} — রিপোর্ট');
+  }
+
+  static const _monthAbbr = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  /// Excel counterpart of [PdfExportService]'s monthly matrix — see that
+  /// method's doc comment for the layout this mirrors.
+  static Future<File> generateMonthlyMatrix({
+    required LandGroup group,
+    required List<GroupMember> members,
+    required List<Contribution> approvedContributions,
+    required List<BuilderPayment> builderPayments,
+    required Map<String, String> memberNames,
+  }) async {
+    final excel = Excel.createExcel();
+    const sheetName = 'মাসভিত্তিক রিপোর্ট';
+    final sheet = excel[sheetName];
+    for (final existing in excel.tables.keys.toList()) {
+      if (existing != sheetName) excel.delete(existing);
+    }
+    excel.setDefaultSheet(sheetName);
+
+    sheet.appendRow([TextCellValue('${group.name} — ${group.landLocation} — মাসভিত্তিক পেমেন্ট ম্যাট্রিক্স')]);
+    sheet.appendRow([TextCellValue('')]);
+
+    final activeMembers = members.where((m) => m.isActive).toList();
+    sheet.appendRow([
+      TextCellValue('ক্র.'),
+      TextCellValue('মাস'),
+      ...activeMembers.map((m) => TextCellValue(memberNames[m.uid] ?? m.uid)),
+      TextCellValue('মোট'),
+      TextCellValue('রেফারেন্স'),
+    ]);
+
+    final months = <DateTime>[];
+    var cur = DateTime(group.createdAt.year, group.createdAt.month);
+    final lastMonth = DateTime(DateTime.now().year, DateTime.now().month);
+    while (!cur.isAfter(lastMonth)) {
+      months.add(cur);
+      cur = DateTime(cur.year, cur.month + 1);
+    }
+
+    double grandTotal = 0;
+    final memberGrandTotals = {for (final m in activeMembers) m.uid: 0.0};
+
+    for (var i = 0; i < months.length; i++) {
+      final m = months[i];
+      final rowContribs = approvedContributions.where((c) => c.year == m.year && c.month == m.month).toList();
+      double rowTotal = 0;
+      final row = <CellValue>[
+        TextCellValue('${i + 1}'),
+        TextCellValue('${_monthAbbr[m.month - 1]}-${m.year}'),
+      ];
+      for (final mem in activeMembers) {
+        final amt = rowContribs.where((c) => c.memberId == mem.uid).fold<double>(0, (s, c) => s + c.amount);
+        rowTotal += amt;
+        memberGrandTotals[mem.uid] = (memberGrandTotals[mem.uid] ?? 0) + amt;
+        row.add(DoubleCellValue(amt));
+      }
+      grandTotal += rowTotal;
+      row.add(DoubleCellValue(rowTotal));
+
+      final monthPayments = builderPayments.where((p) => p.date.year == m.year && p.date.month == m.month).toList();
+      final remarkText = monthPayments
+          .map(
+            (p) =>
+                'বিল্ডারকে ${CurrencyFormatter.format(p.amount, withSymbol: false)} জমা'
+                '${(p.referenceNumber?.isNotEmpty ?? false) ? ' (রেফ: ${p.referenceNumber})' : ''}',
+          )
+          .join('; ');
+      row.add(TextCellValue(remarkText));
+
+      sheet.appendRow(row);
+    }
+
+    sheet.appendRow([
+      TextCellValue(''),
+      TextCellValue('সর্বমোট'),
+      ...activeMembers.map((m) => DoubleCellValue(memberGrandTotals[m.uid] ?? 0)),
+      DoubleCellValue(grandTotal),
+      TextCellValue(''),
+    ]);
+
+    final bytes = excel.save();
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/${group.name} — মাসভিত্তিক রিপোর্ট.xlsx');
+    await file.writeAsBytes(bytes!, flush: true);
+    return file;
+  }
+
+  static Future<void> generateMonthlyMatrixAndShare({
+    required LandGroup group,
+    required List<GroupMember> members,
+    required List<Contribution> approvedContributions,
+    required List<BuilderPayment> builderPayments,
+    required Map<String, String> memberNames,
+  }) async {
+    final file = await generateMonthlyMatrix(
+      group: group,
+      members: members,
+      approvedContributions: approvedContributions,
+      builderPayments: builderPayments,
+      memberNames: memberNames,
+    );
+    await Share.shareXFiles([XFile(file.path)], text: '${group.name} — মাসভিত্তিক রিপোর্ট');
   }
 }

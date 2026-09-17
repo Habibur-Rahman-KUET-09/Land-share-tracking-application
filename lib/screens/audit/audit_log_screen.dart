@@ -4,17 +4,30 @@ import '../../l10n/app_strings.dart';
 import '../../models/audit_log_entry.dart';
 import '../../services/audit_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/date_range_filter_bar.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/member_name.dart';
 
 /// FR 7 "Audit Trail/Activity Log" — Admin/Creator only, append-only.
-class AuditLogScreen extends StatelessWidget {
+class AuditLogScreen extends StatefulWidget {
   final String groupId;
   final bool canView;
-  const AuditLogScreen({super.key, required this.groupId, required this.canView});
+  const AuditLogScreen({
+    super.key,
+    required this.groupId,
+    required this.canView,
+  });
+
+  @override
+  State<AuditLogScreen> createState() => _AuditLogScreenState();
+}
+
+class _AuditLogScreenState extends State<AuditLogScreen> {
+  DateTimeRange? _range;
 
   static const _actionLabelsBn = {
     'create_group': 'গ্রুপ তৈরি',
+    'rename_group': 'গ্রুপের নাম পরিবর্তন',
     'edit_plan': 'পরিকল্পনা সম্পাদনা',
     'add_member': 'সদস্য যোগ',
     'update_role': 'ভূমিকা পরিবর্তন',
@@ -29,6 +42,7 @@ class AuditLogScreen extends StatelessWidget {
 
   static const _actionIcons = {
     'create_group': Icons.add_circle_outline,
+    'rename_group': Icons.drive_file_rename_outline,
     'edit_plan': Icons.tune,
     'add_member': Icons.person_add_alt_outlined,
     'update_role': Icons.badge_outlined,
@@ -43,6 +57,7 @@ class AuditLogScreen extends StatelessWidget {
 
   static const _actionColors = {
     'create_group': (Color(0xFFE0F2F1), Color(0xFF00695C)),
+    'rename_group': (Color(0xFFEDE7F6), Color(0xFF4527A0)),
     'edit_plan': (Color(0xFFEDE7F6), Color(0xFF4527A0)),
     'add_member': (Color(0xFFE3F2FD), Color(0xFF1565C0)),
     'update_role': (Color(0xFFE3F2FD), Color(0xFF1565C0)),
@@ -57,79 +72,126 @@ class AuditLogScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!canView) {
-      return EmptyState(icon: Icons.lock_outline, message: S.t(context, 'no_permission'));
+    if (!widget.canView) {
+      return EmptyState(
+        icon: Icons.lock_outline,
+        message: S.t(context, 'no_permission'),
+      );
     }
     return StreamBuilder<List<AuditLogEntry>>(
-      stream: AuditService().watch(groupId),
+      stream: AuditService().watch(widget.groupId),
       builder: (context, snapshot) {
-        final entries = snapshot.data ?? [];
-        if (entries.isEmpty) {
-          return EmptyState(icon: Icons.history, message: S.t(context, 'no_pending_approvals'));
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: entries.length,
-          itemBuilder: (context, index) {
-            final e = entries[index];
-            final (iconBg, iconFg) = _actionColors[e.action] ?? (AppColors.dueBg, AppColors.dueFg);
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: iconBg,
-                      foregroundColor: iconFg,
-                      child: Icon(_actionIcons[e.action] ?? Icons.history, size: 16),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _actionLabelsBn[e.action] ?? e.action,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.heading,
+        final entries = (snapshot.data ?? [])
+            .where((e) => isInDateRange(e.timestamp, _range))
+            .toList();
+        return Column(
+          children: [
+            DateRangeFilterBar(
+              range: _range,
+              onChanged: (r) => setState(() => _range = r),
+            ),
+            Expanded(
+              child: entries.isEmpty
+                  ? EmptyState(
+                      icon: Icons.history,
+                      message: S.t(context, 'no_pending_approvals'),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: entries.length,
+                      itemBuilder: (context, index) {
+                        final e = entries[index];
+                        final (iconBg, iconFg) =
+                            _actionColors[e.action] ??
+                            (AppColors.dueBg, AppColors.dueFg);
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: iconBg,
+                                  foregroundColor: iconFg,
+                                  child: Icon(
+                                    _actionIcons[e.action] ?? Icons.history,
+                                    size: 16,
                                   ),
                                 ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: Text(
-                                  '${e.timestamp.day}-${e.timestamp.month}-${e.timestamp.year}',
-                                  style: const TextStyle(fontSize: 12, color: Color(0xFF999999)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              _actionLabelsBn[e.action] ??
+                                                  e.action,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                                color: AppColors.heading,
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 8,
+                                            ),
+                                            child: Text(
+                                              '${e.timestamp.day}-${e.timestamp.month}-${e.timestamp.year}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF999999),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          MemberName(
+                                            uid: e.actorId,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: AppColors.bodyText,
+                                            ),
+                                          ),
+                                          const Text(
+                                            ' — ',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: AppColors.bodyText,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              e.details,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color: AppColors.bodyText,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              MemberName(uid: e.actorId, style: const TextStyle(fontSize: 13, color: AppColors.bodyText)),
-                              const Text(' — ', style: TextStyle(fontSize: 13, color: AppColors.bodyText)),
-                              Expanded(
-                                child: Text(e.details, style: const TextStyle(fontSize: 13, color: AppColors.bodyText)),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  ],
-                ),
-              ),
-            );
-          },
+            ),
+          ],
         );
       },
     );

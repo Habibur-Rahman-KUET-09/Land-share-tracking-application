@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../models/land_group.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/confirm_dialog.dart';
@@ -9,7 +11,7 @@ import '../../widgets/kistify_app_bar.dart';
 import '../home/group_list_screen.dart';
 import 'edit_plan_screen.dart';
 
-/// Creator-only hub: edit the installment plan, or delete the group
+/// Creator-only hub: edit the group name/plan, or delete the group
 /// entirely. Reached from GroupDetailScreen's app bar (Creator only).
 class GroupManagementScreen extends StatefulWidget {
   final LandGroup group;
@@ -21,6 +23,41 @@ class GroupManagementScreen extends StatefulWidget {
 
 class _GroupManagementScreenState extends State<GroupManagementScreen> {
   bool _deleting = false;
+  bool _renaming = false;
+
+  Future<void> _rename() async {
+    final ctrl = TextEditingController(text: widget.group.name);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(S.t(context, 'group_name')),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(labelText: S.t(context, 'group_name'), border: const OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.t(context, 'cancel'))),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(ctrl.text.trim()),
+            child: Text(S.t(context, 'save')),
+          ),
+        ],
+      ),
+    );
+    if (newName == null || newName.isEmpty || newName == widget.group.name) return;
+    if (!mounted) return;
+    setState(() => _renaming = true);
+    try {
+      final uid = context.read<AppAuthProvider>().firebaseUser!.uid;
+      await GroupService().renameGroup(groupId: widget.group.id, name: newName, editedBy: uid);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _renaming = false);
+    }
+  }
 
   Future<void> _delete() async {
     final confirmed = await showConfirmDialog(
@@ -56,6 +93,22 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Color(0x1A0F6E5C),
+                foregroundColor: AppColors.primary,
+                child: Icon(Icons.drive_file_rename_outline),
+              ),
+              title: Text(S.t(context, 'group_name')),
+              subtitle: Text(widget.group.name),
+              trailing: _renaming
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.chevron_right),
+              onTap: _renaming ? null : _rename,
+            ),
+          ),
+          const SizedBox(height: 12),
           Card(
             child: ListTile(
               leading: const CircleAvatar(
