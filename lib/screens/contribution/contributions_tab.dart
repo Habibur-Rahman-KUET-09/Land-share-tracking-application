@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/app_user.dart';
 import '../../models/contribution.dart';
+import '../../models/group_member.dart';
 import '../../models/land_group.dart';
 import '../../services/contribution_service.dart';
 import '../../services/group_service.dart';
@@ -17,6 +18,7 @@ import '../../utils/currency_formatter.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/date_range_filter_bar.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/member_name.dart';
 import '../../widgets/status_chip.dart';
 
 /// FR 2.3 (Monthly Contribution Collection) + Finalized Decisions 2 & 3:
@@ -43,12 +45,18 @@ class _ContributionsTabState extends State<ContributionsTab> {
   bool _showApprovals = false;
   DateTimeRange? _range;
 
+  /// "One man army" mode: there is no second approver, so there is no
+  /// approval queue to show — the manager books entries for everyone and
+  /// they land approved. See [ContributionService.submit].
+  bool get _managesEveryone => widget.group.singleManager && widget.canApprove;
+
   @override
   Widget build(BuildContext context) {
+    final showApprovalToggle = widget.canApprove && !widget.group.singleManager;
     return Scaffold(
       body: Column(
         children: [
-          if (widget.canApprove)
+          if (showApprovalToggle)
             Padding(
               padding: const EdgeInsets.all(12),
               child: SegmentedButton<bool>(
@@ -62,23 +70,28 @@ class _ContributionsTabState extends State<ContributionsTab> {
             ),
           DateRangeFilterBar(range: _range, onChanged: (r) => setState(() => _range = r)),
           Expanded(
-            child: _showApprovals
+            child: _showApprovals && showApprovalToggle
                 ? _ApprovalsList(group: widget.group, currentUid: widget.currentUid, range: _range)
                 : _MyContributions(
                     group: widget.group,
                     currentUid: widget.currentUid,
                     canCancel: widget.canCancel,
                     range: _range,
+                    showEveryone: _managesEveryone,
                   ),
           ),
         ],
       ),
-      floatingActionButton: _showApprovals
+      floatingActionButton: _showApprovals && showApprovalToggle
           ? null
           : FloatingActionButton.extended(
               onPressed: () => showDialog(
                 context: context,
-                builder: (_) => _SubmitContributionDialog(group: widget.group, memberId: widget.currentUid),
+                builder: (_) => _SubmitContributionDialog(
+                  group: widget.group,
+                  memberId: widget.currentUid,
+                  managesEveryone: _managesEveryone,
+                ),
               ),
               icon: const Icon(Icons.add),
               label: Text(S.t(context, 'mark_paid')),
@@ -92,17 +105,26 @@ class _MyContributions extends StatelessWidget {
   final String currentUid;
   final bool canCancel;
   final DateTimeRange? range;
+
+  /// In single-manager mode the manager records everyone's entries, so the
+  /// list has to show everyone's — otherwise they'd file an entry and watch
+  /// it disappear.
+  final bool showEveryone;
+
   const _MyContributions({
     required this.group,
     required this.currentUid,
     required this.canCancel,
     required this.range,
+    this.showEveryone = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Contribution>>(
-      stream: ContributionService().watchMemberContributions(group.id, currentUid),
+      stream: showEveryone
+          ? ContributionService().watchGroupContributions(group.id)
+          : ContributionService().watchMemberContributions(group.id, currentUid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -122,7 +144,22 @@ class _MyContributions extends StatelessWidget {
               child: ListTile(
                 leading: _MethodIcon(method: c.method),
                 title: Text('${c.month}/${c.year} — ${CurrencyFormatter.format(c.amount)}'),
-                subtitle: Text(S.t(context, 'method_${c.method.name}')),
+                subtitle: showEveryone
+                    ? Row(
+                        children: [
+                          Flexible(
+                            child: MemberName(
+                              uid: c.memberId,
+                              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          Text(
+                            ' • ${S.t(context, 'method_${c.method.name}')}',
+                            style: const TextStyle(fontSize: 12.5),
+                          ),
+                        ],
+                      )
+                    : Text(S.t(context, 'method_${c.method.name}')),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -354,7 +391,16 @@ class _StatusChipFor extends StatelessWidget {
 class _SubmitContributionDialog extends StatefulWidget {
   final LandGroup group;
   final String memberId;
-  const _SubmitContributionDialog({required this.group, required this.memberId});
+
+  /// Single-manager mode: the entry can be for any member, and it's booked
+  /// as approved on the spot (there's nobody else to approve it).
+  final bool managesEveryone;
+
+  const _SubmitContributionDialog({
+    required this.group,
+    required this.memberId,
+    this.managesEveryone = false,
+  });
 
   @override
   State<_SubmitContributionDialog> createState() => _SubmitContributionDialogState();
@@ -369,10 +415,35 @@ class _SubmitContributionDialogState extends State<_SubmitContributionDialog> {
   bool _saving = false;
   String? _error;
 
+  late String _forMemberId = widget.memberId;
+  List<GroupMember> _members = const [];
+
   @override
   void initState() {
     super.initState();
-    GroupService().getMember(widget.group.id, widget.memberId).then((m) {
+    _loadAmountFor(_forMemberId);
+    if (widget.managesEveryone) {
+      GroupService().watchMembers(widget.group.id).first.then((members) {
+        if (!mounted) return;
+        final active = members.where((m) => m.isActive).toList();
+        setState(() {
+          _members = active;
+          // The dropdown asserts if its value isn't among its items, which
+          // is exactly what happens if the manager's own membership has been
+          // exited — fall back to whoever is first.
+          if (active.isNotEmpty && !active.any((m) => m.uid == _forMemberId)) {
+            _forMemberId = active.first.uid;
+            _loadAmountFor(_forMemberId);
+          }
+        });
+      });
+    }
+  }
+
+  /// Pre-fills the amount with whatever this member owes each month, so the
+  /// common case is one tap.
+  void _loadAmountFor(String uid) {
+    GroupService().getMember(widget.group.id, uid).then((m) {
       if (m != null && mounted) {
         _amountCtrl.text = m.monthlyAmount == 0 ? '' : m.monthlyAmount.toString();
       }
@@ -407,13 +478,14 @@ class _SubmitContributionDialogState extends State<_SubmitContributionDialog> {
       }
       await ContributionService().submit(
         groupId: widget.group.id,
-        memberId: widget.memberId,
+        memberId: _forMemberId,
         month: _month,
         year: _year,
         amount: amount,
         method: _method,
         receiptUrl: receiptUrl,
         submittedBy: widget.memberId,
+        singleManager: widget.managesEveryone,
       );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -432,6 +504,22 @@ class _SubmitContributionDialogState extends State<_SubmitContributionDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (widget.managesEveryone && _members.isNotEmpty) ...[
+              DropdownButtonFormField<String>(
+                initialValue: _forMemberId,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: S.t(context, 'entry_for_member')),
+                items: [
+                  for (final m in _members) DropdownMenuItem(value: m.uid, child: MemberName(uid: m.uid)),
+                ],
+                onChanged: (v) {
+                  if (v == null) return;
+                  setState(() => _forMemberId = v);
+                  _loadAmountFor(v);
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 Expanded(

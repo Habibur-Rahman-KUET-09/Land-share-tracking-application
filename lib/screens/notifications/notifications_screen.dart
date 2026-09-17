@@ -18,6 +18,8 @@ const _typeIcons = {
   'due_reminder': Icons.event_outlined,
   'builder_deadline': Icons.schedule_outlined,
   'missed_payment_alert': Icons.error_outline,
+  'contribution_recorded': Icons.note_add_outlined,
+  'lottery_draw': Icons.emoji_events_outlined,
 };
 
 const _typeColors = {
@@ -28,6 +30,8 @@ const _typeColors = {
   'due_reminder': (Color(0xFFE3F2FD), Color(0xFF1565C0)),
   'builder_deadline': (Color(0xFFE3F2FD), Color(0xFF1565C0)),
   'missed_payment_alert': (Color(0xFFFCEBEB), Color(0xFF791F1F)),
+  'contribution_recorded': (Color(0xFFE3F4EC), Color(0xFF1B6B44)),
+  'lottery_draw': (Color(0xFFFFF8E1), Color(0xFF8A6100)),
 };
 
 /// The bell icon's destination — everything functions/index.js has ever

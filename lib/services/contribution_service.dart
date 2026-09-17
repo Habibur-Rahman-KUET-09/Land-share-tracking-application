@@ -17,6 +17,11 @@ class ContributionService {
       _db.collection('groups').doc(groupId).collection('contributions');
 
   /// [receiptUrl] is optional — a member can submit without a photo receipt.
+  ///
+  /// [singleManager] is the group's "one man army" mode: there is nobody
+  /// else to approve, so the entry is booked as approved on the spot and
+  /// the manager may record it for any member — which is why [memberId] is
+  /// free to differ from [submittedBy] there.
   Future<String> submit({
     required String groupId,
     required String memberId,
@@ -26,8 +31,10 @@ class ContributionService {
     required PaymentMethod method,
     String? receiptUrl,
     required String submittedBy,
+    bool singleManager = false,
   }) async {
     final ref = _col(groupId).doc();
+    final now = DateTime.now();
     final contribution = Contribution(
       id: ref.id,
       groupId: groupId,
@@ -37,9 +44,11 @@ class ContributionService {
       amount: amount,
       method: method,
       receiptUrl: receiptUrl,
-      status: ContributionStatus.pendingConfirmation,
+      status: singleManager ? ContributionStatus.approved : ContributionStatus.pendingConfirmation,
       submittedBy: submittedBy,
-      submittedAt: DateTime.now(),
+      submittedAt: now,
+      approvedBy: singleManager ? submittedBy : null,
+      approvedAt: singleManager ? now : null,
     );
     await ref.set(contribution.toMap());
     await _audit.log(
@@ -48,7 +57,9 @@ class ContributionService {
       action: 'submit_contribution',
       targetType: 'contribution',
       targetId: ref.id,
-      details: 'কিস্তি পরিশোধের এন্ট্রি জমা দেওয়া হয়েছে (অনুমোদনের অপেক্ষায়)',
+      details: singleManager
+          ? 'কিস্তি পরিশোধের এন্ট্রি যোগ করা হয়েছে'
+          : 'কিস্তি পরিশোধের এন্ট্রি জমা দেওয়া হয়েছে (অনুমোদনের অপেক্ষায়)',
     );
     return ref.id;
   }

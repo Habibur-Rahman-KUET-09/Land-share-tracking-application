@@ -9,6 +9,7 @@ import '../../services/group_service.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/group_type_labels.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/kistify_mark.dart';
 import '../group/create_group_screen.dart';
@@ -118,9 +119,17 @@ class GroupListScreen extends StatelessWidget {
                       );
                     }),
                     title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                    // Built from whatever the group's type actually has —
+                    // a lottery has no location, value or installment count,
+                    // and would otherwise read " • ৳0 • 0 কিস্তি".
                     subtitle: Text(
-                      '${g.landLocation} • ${CurrencyFormatter.format(g.totalLandValue)} • '
-                      '${g.totalInstallments} কিস্তি',
+                      [
+                        S.t(context, g.groupType.nameKey),
+                        if (g.landLocation.isNotEmpty) g.landLocation,
+                        if (g.totalLandValue > 0) CurrencyFormatter.format(g.totalLandValue),
+                        if (g.groupType.hasInstallmentCount && g.totalInstallments > 0)
+                          '${g.totalInstallments} কিস্তি',
+                      ].join(' • '),
                     ),
                     trailing: const Icon(Icons.chevron_right, color: AppColors.mutedText),
                     onTap: () => Navigator.of(context).push(

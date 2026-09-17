@@ -83,6 +83,10 @@ class GroupMember {
   /// Void an already-approved entry back out.
   bool get canCancelApprovedContribution => isCreator || isAdmin;
 
+  /// Hold a month's lottery draw in a [GroupType.lottery] group. Same
+  /// creator/admin bar firestore.rules puts on the lotteryDraws collection.
+  bool get canRunLottery => isCreator || isAdmin;
+
   bool get canDownloadReports => isCreator || isAdmin;
   bool get canViewAuditLog => isCreator || isAdmin;
   bool get canRecordBuilderPayment => isCreator || isCollector;

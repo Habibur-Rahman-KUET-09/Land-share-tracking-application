@@ -8,6 +8,9 @@
 //     the Maker-Checker rule enforced in Firestore rules / ContributionService)
 //   - a contribution's submitter told once it's approved/rejected
 //   - the group's Creator/Admin told when a builder payment is recorded
+//   - in a "one man army" group (singleManager), the member an entry was
+//     booked against told it happened — nobody asked them to submit it
+//   - in a lottery (সমিতি) group, everyone told that month's winner
 //
 // Every notification is written twice: once as an FCM push (best-effort —
 // silently does nothing if the recipient has no registered device), and
@@ -72,13 +75,27 @@ exports.onContributionCreated = onDocumentCreated(
   'groups/{groupId}/contributions/{contributionId}',
   async (event) => {
     const contribution = event.data.data();
-    if (contribution.status !== 'pendingConfirmation') return;
-
     const groupId = event.params.groupId;
     const groupRef = db.collection('groups').doc(groupId);
     const groupSnap = await groupRef.get();
     if (!groupSnap.exists) return;
     const group = groupSnap.data();
+
+    // "One man army" groups write entries already approved, so there is no
+    // approval to chase — but the member it was booked against still needs
+    // to know it happened, since they didn't record it themselves.
+    if (contribution.status === 'approved') {
+      if (!contribution.memberId || contribution.memberId === contribution.submittedBy) return;
+      await notifyUser(contribution.memberId, {
+        title: 'আপনার কিস্তির এন্ট্রি যোগ করা হয়েছে',
+        body: `${group.name} — আপনার নামে ৳${contribution.amount} এর একটি কিস্তির এন্ট্রি যোগ করা হয়েছে।`,
+        type: 'contribution_recorded',
+        groupId,
+        extra: { contributionId: event.params.contributionId },
+      });
+      return;
+    }
+    if (contribution.status !== 'pendingConfirmation') return;
 
     // Maker-Checker: never notify the person who submitted it, or the
     // member the entry belongs to (they can't approve their own entry
@@ -155,14 +172,56 @@ exports.onBuilderPaymentCreated = onDocumentCreated(
       (uid) => uid !== payment.recordedBy,
     );
 
+    // Same ledger, different destination depending on the group's type.
+    const savings = group.groupType === 'savings';
+    const title = savings ? 'ব্যাংকে টাকা জমা দেওয়া হয়েছে' : 'বিল্ডারকে টাকা জমা দেওয়া হয়েছে';
+    const where = savings ? 'ব্যাংকে' : 'বিল্ডারকে';
+
     await Promise.all(
       recipients.map((uid) =>
         notifyUser(uid, {
-          title: 'বিল্ডারকে টাকা জমা দেওয়া হয়েছে',
-          body: `${group.name} — বিল্ডারকে ৳${payment.amount} জমা দেওয়া হয়েছে।`,
+          title,
+          body: `${group.name} — ${where} ৳${payment.amount} জমা দেওয়া হয়েছে।`,
           type: 'builder_payment',
           groupId,
           extra: { paymentId: event.params.paymentId },
+        }),
+      ),
+    );
+  },
+);
+
+/**
+ * A lottery (সমিতি) group's monthly result. Everyone hears it, winner
+ * included — who won and how much is exactly what the whole group wants
+ * confirmed the moment it's drawn.
+ */
+exports.onLotteryDrawCreated = onDocumentCreated(
+  'groups/{groupId}/lotteryDraws/{drawId}',
+  async (event) => {
+    const draw = event.data.data();
+    const groupId = event.params.groupId;
+    const groupRef = db.collection('groups').doc(groupId);
+    const groupSnap = await groupRef.get();
+    if (!groupSnap.exists) return;
+    const group = groupSnap.data();
+
+    const winnerSnap = await db.collection('users').doc(draw.winnerUid).get();
+    const winnerName = winnerSnap.exists ? winnerSnap.data().name || 'একজন সদস্য' : 'একজন সদস্য';
+
+    const membersSnap = await groupRef.collection('members').where('status', '==', 'active').get();
+
+    await Promise.all(
+      membersSnap.docs.map((d) =>
+        notifyUser(d.id, {
+          title: 'এই মাসের লটারির ফলাফল',
+          body:
+            d.id === draw.winnerUid
+              ? `${group.name} — আপনি এই মাসের লটারিতে জিতেছেন! ৳${draw.collectedAmount}`
+              : `${group.name} — ${draw.month}/${draw.year} মাসের লটারিতে ${winnerName} জিতেছেন (৳${draw.collectedAmount})।`,
+          type: 'lottery_draw',
+          groupId,
+          extra: { drawId: event.params.drawId },
         }),
       ),
     );
@@ -214,7 +273,9 @@ exports.dailyReminders = onSchedule('every day 09:00', async () => {
     }
 
     // ২ দিন আগে: যারা বিল্ডারকে টাকা জমা দেন (Creator/Collector) তাদের deadline reminder।
-    if (day === dueDay - 2) {
+    // লটারি গ্রুপে বাইরে কোথাও জমা দেওয়ার কিছু নেই — পুরো কালেকশন সেই মাসের
+    // বিজয়ী পান — তাই সেখানে এই reminder যায় না।
+    if (day === dueDay - 2 && group.groupType !== 'lottery') {
       const collectorIds = members.filter((m) => ['creator', 'collector'].includes(m.role)).map((m) => m.uid);
       await Promise.all(
         collectorIds.map((uid) =>

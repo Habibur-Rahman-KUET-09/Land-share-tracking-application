@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:land_installment_tracker/models/contribution.dart';
 import 'package:land_installment_tracker/models/group_member.dart';
 import 'package:land_installment_tracker/models/land_group.dart';
+import 'package:land_installment_tracker/models/lottery_draw.dart';
+import 'package:land_installment_tracker/services/lottery_service.dart';
 import 'package:land_installment_tracker/utils/currency_formatter.dart';
 import 'package:land_installment_tracker/utils/due_calculator.dart';
 
@@ -199,6 +201,78 @@ void main() {
       );
       expect(status.isFullyPaid, isTrue);
       expect(status.dueAmount, 0);
+    });
+  });
+
+  group('LotteryService (সমিতি/ROSCA rotation)', () {
+    GroupMember memberOf(String uid, {MemberStatus status = MemberStatus.active}) => GroupMember(
+          uid: uid,
+          groupId: 'g1',
+          role: GroupRole.member,
+          monthlyAmount: 5000,
+          status: status,
+          joinedAt: DateTime(2026, 1, 1),
+        );
+
+    LotteryDraw drawOf(String winner, int month) => LotteryDraw(
+          id: 'd$month',
+          groupId: 'g1',
+          month: month,
+          year: 2026,
+          winnerUid: winner,
+          collectedAmount: 15000,
+          wasRandom: true,
+          drawnBy: 'u1',
+          drawnAt: DateTime(2026, month, 10),
+        );
+
+    final members = [memberOf('u1'), memberOf('u2'), memberOf('u3')];
+
+    test('a past winner drops out of the draw, everyone else stays in', () {
+      final eligible = LotteryService.eligibleMembers(members, [drawOf('u2', 1)]);
+      expect(eligible.map((m) => m.uid), ['u1', 'u3']);
+    });
+
+    test('an exited member is never in the draw', () {
+      final withExit = [memberOf('u1'), memberOf('u2', status: MemberStatus.exited)];
+      expect(LotteryService.eligibleMembers(withExit, []).map((m) => m.uid), ['u1']);
+    });
+
+    test('the cycle is complete only once every active member has won', () {
+      expect(LotteryService.isCycleComplete(members, [drawOf('u1', 1), drawOf('u2', 2)]), isFalse);
+      expect(
+        LotteryService.isCycleComplete(members, [drawOf('u1', 1), drawOf('u2', 2), drawOf('u3', 3)]),
+        isTrue,
+      );
+    });
+
+    test('an empty group is not a completed cycle', () {
+      expect(LotteryService.isCycleComplete(const [], const []), isFalse);
+    });
+
+    test('the pot is only the months own approved contributions', () {
+      Contribution c(String uid, int month, double amount) => Contribution(
+            id: '$uid-$month',
+            groupId: 'g1',
+            memberId: uid,
+            month: month,
+            year: 2026,
+            amount: amount,
+            method: PaymentMethod.cash,
+            status: ContributionStatus.approved,
+            submittedBy: uid,
+            submittedAt: DateTime(2026, month, 3),
+          );
+      final approved = [c('u1', 9, 5000), c('u2', 9, 5000), c('u3', 8, 5000)];
+      expect(LotteryService.potFor(approved, 9, 2026), 10000);
+      expect(LotteryService.potFor(approved, 10, 2026), 0);
+    });
+
+    test('drawFor finds that months result and nothing else', () {
+      final draws = [drawOf('u1', 1), drawOf('u2', 2)];
+      expect(LotteryService.drawFor(draws, 2, 2026)?.winnerUid, 'u2');
+      expect(LotteryService.drawFor(draws, 3, 2026), isNull);
+      expect(LotteryService.drawFor(draws, 2, 2025), isNull);
     });
   });
 }

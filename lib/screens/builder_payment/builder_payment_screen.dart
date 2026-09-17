@@ -13,10 +13,13 @@ import '../../services/builder_payment_service.dart';
 import '../../services/storage_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/group_type_labels.dart';
 import '../../widgets/date_range_filter_bar.dart';
 import '../../widgets/empty_state.dart';
 
-/// FR 2.4: what an Admin actually remitted to the land's builder/developer.
+/// FR 2.4: the outgoing-money ledger — what an Admin actually remitted to the
+/// land's builder/developer, or (in a savings group) deposited to the bank.
+/// Same records either way; only the wording changes with the group's type.
 class BuilderPaymentScreen extends StatefulWidget {
   final LandGroup group;
   final bool canRecord;
@@ -60,7 +63,7 @@ class _BuilderPaymentScreenState extends State<BuilderPaymentScreen> {
                               child: const Icon(Icons.account_balance_outlined, size: 18, color: AppColors.primary),
                             ),
                             const SizedBox(width: 10),
-                            Text(S.t(context, 'total_remitted')),
+                            Text(S.t(context, widget.group.groupType.outgoingTotalKey)),
                           ],
                         ),
                         Text(
@@ -119,7 +122,7 @@ class _BuilderPaymentScreenState extends State<BuilderPaymentScreen> {
                         builder: (_) => _RecordPaymentDialog(group: widget.group),
                       ),
                       icon: const Icon(Icons.add),
-                      label: Text(S.t(context, 'record_builder_payment')),
+                      label: Text(S.t(context, widget.group.groupType.outgoingActionKey)),
                     ),
                   ),
                 ),
@@ -189,7 +192,7 @@ class _RecordPaymentDialogState extends State<_RecordPaymentDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(S.t(context, 'record_builder_payment')),
+      title: Text(S.t(context, widget.group.groupType.outgoingActionKey)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

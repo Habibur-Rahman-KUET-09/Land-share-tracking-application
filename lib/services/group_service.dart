@@ -26,6 +26,8 @@ class GroupService {
       _groups.doc(groupId).collection('builderPayments');
   CollectionReference<Map<String, dynamic>> _auditLog(String groupId) =>
       _groups.doc(groupId).collection('auditLog');
+  CollectionReference<Map<String, dynamic>> _lotteryDraws(String groupId) =>
+      _groups.doc(groupId).collection('lotteryDraws');
 
   // ---------------------------------------------------------------------
   // Group CRUD
@@ -35,11 +37,13 @@ class GroupService {
   /// (full group management — the other roles are Admin/Collector/Member).
   Future<String> createGroup({
     required String name,
+    GroupType groupType = GroupType.installment,
     required String landLocation,
     required double totalLandValue,
     required int totalInstallments,
     required double monthlyTotalToBuilder,
     required int dueDayOfMonth,
+    bool singleManager = false,
     required ContributionType contributionType,
     required String creatorUid,
   }) async {
@@ -47,11 +51,13 @@ class GroupService {
     final group = LandGroup(
       id: ref.id,
       name: name,
+      groupType: groupType,
       landLocation: landLocation,
       totalLandValue: totalLandValue,
       totalInstallments: totalInstallments,
       monthlyTotalToBuilder: monthlyTotalToBuilder,
       dueDayOfMonth: dueDayOfMonth,
+      singleManager: singleManager,
       contributionType: contributionType,
       createdBy: creatorUid,
       createdAt: DateTime.now(),
@@ -115,6 +121,29 @@ class GroupService {
     );
   }
 
+  /// Turns "one man army" mode on or off after the fact — a group can start
+  /// with a single manager and later grow into a Maker-Checker one, or the
+  /// other way round. Already-recorded entries keep whatever status they
+  /// were written with; this only affects new ones. Creator-only, enforced
+  /// by firestore.rules.
+  Future<void> setSingleManager({
+    required String groupId,
+    required bool singleManager,
+    required String editedBy,
+  }) async {
+    await _groups.doc(groupId).update({'singleManager': singleManager});
+    await _audit.log(
+      groupId: groupId,
+      actorId: editedBy,
+      action: 'edit_plan',
+      targetType: 'group',
+      targetId: groupId,
+      details: singleManager
+          ? 'একক ম্যানেজার মোড চালু করা হয়েছে (অনুমোদনের ধাপ নেই)'
+          : 'একক ম্যানেজার মোড বন্ধ করা হয়েছে (অনুমোদনের ধাপ ফিরে এসেছে)',
+    );
+  }
+
   /// FR Finalized Decision 4: edits are snapshotted to planHistory first, so
   /// the previous plan is always recoverable/visible (FR 2.8 transparency).
   Future<void> editPlan({
@@ -169,7 +198,8 @@ class GroupService {
   }
 
   /// Permanently deletes the group and everything under it (members,
-  /// contributions, builder payments, plan history, audit log). Creator-only
+  /// contributions, builder payments, lottery draws, plan history, audit
+  /// log). Creator-only
   /// — enforced both by the caller (GroupManagementScreen only shows this to
   /// a creator) and by firestore.rules. Firestore doesn't cascade-delete
   /// subcollections on its own, so each is cleared explicitly first.
@@ -181,6 +211,7 @@ class GroupService {
     for (final col in [
       _contributions(groupId),
       _builderPayments(groupId),
+      _lotteryDraws(groupId),
       _planHistory(groupId),
       _auditLog(groupId),
       _members(groupId),

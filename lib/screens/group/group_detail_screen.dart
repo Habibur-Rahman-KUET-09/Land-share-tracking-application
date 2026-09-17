@@ -10,16 +10,21 @@ import '../audit/audit_log_screen.dart';
 import '../builder_payment/builder_payment_screen.dart';
 import '../contribution/contributions_tab.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../lottery/lottery_screen.dart';
 import '../reports/reports_screen.dart';
 import '../transparency/transparency_screen.dart';
+import '../../utils/group_type_labels.dart';
 import '../../widgets/kistify_app_bar.dart';
 import 'group_management_screen.dart';
 import 'members_tab.dart';
 
-/// The group's hub: Dashboard, Members, Contributions, Builder Payments,
-/// Reports, Transparency ledger, Audit log — one tab per FRD module, minus
-/// whichever the current member has no access to at all (Reports, Audit
-/// Log — both Admin/Creator-only).
+/// The group's hub: Dashboard, Members, Contributions, the outgoing-money
+/// ledger, Reports, Transparency ledger, Audit log — one tab per FRD module,
+/// minus whichever the current member has no access to at all (Reports, Audit
+/// Log — both Admin/Creator-only) and whichever the group's type doesn't have
+/// (a lottery pays its winner directly, so it gets a Lottery tab in place of
+/// the builder-payment ledger; a savings group calls that ledger "bank
+/// deposits").
 class GroupDetailScreen extends StatefulWidget {
   final String groupId;
   const GroupDetailScreen({super.key, required this.groupId});
@@ -83,7 +88,7 @@ class _GroupTabs extends StatefulWidget {
   final String currentUid;
 
   _GroupTabs({required this.group, required this.me, required this.currentUid})
-      : super(key: ValueKey('${me?.canDownloadReports}-${me?.canViewAuditLog}'));
+      : super(key: ValueKey('${group.groupType.name}-${me?.canDownloadReports}-${me?.canViewAuditLog}'));
 
   @override
   State<_GroupTabs> createState() => _GroupTabsState();
@@ -99,11 +104,21 @@ class _GroupTabsState extends State<_GroupTabs> with SingleTickerProviderStateMi
   bool get _canViewReports => widget.me?.canDownloadReports ?? false;
   bool get _canViewAudit => widget.me?.canViewAuditLog ?? false;
   bool get _canEditNames => widget.me?.canEditMemberNames ?? false;
+  bool get _canRunLottery => widget.me?.canRunLottery ?? false;
+
+  String? get _outgoingTabKey => widget.group.groupType.outgoingTabKey;
+  bool get _hasLottery => widget.group.groupType.hasLottery;
 
   @override
   void initState() {
     super.initState();
-    final tabCount = 5 + (_canViewReports ? 1 : 0) + (_canViewAudit ? 1 : 0);
+    // Dashboard, Members, Contributions, Transparency are always there; the
+    // rest depend on the group's type and this member's permissions.
+    final tabCount = 4 +
+        (_outgoingTabKey != null ? 1 : 0) +
+        (_hasLottery ? 1 : 0) +
+        (_canViewReports ? 1 : 0) +
+        (_canViewAudit ? 1 : 0);
     _tabController = TabController(length: tabCount, vsync: this);
   }
 
@@ -122,7 +137,8 @@ class _GroupTabsState extends State<_GroupTabs> with SingleTickerProviderStateMi
       Tab(text: S.t(context, 'dashboard')),
       Tab(text: S.t(context, 'members')),
       Tab(text: S.t(context, 'contributions')),
-      Tab(text: S.t(context, 'builder_payments')),
+      if (_outgoingTabKey != null) Tab(text: S.t(context, _outgoingTabKey!)),
+      if (_hasLottery) Tab(text: S.t(context, 'lottery')),
       if (_canViewReports) Tab(text: S.t(context, 'reports')),
       Tab(text: S.t(context, 'transparency')),
       if (_canViewAudit) Tab(text: S.t(context, 'audit_log')),
@@ -132,7 +148,8 @@ class _GroupTabsState extends State<_GroupTabs> with SingleTickerProviderStateMi
       DashboardScreen(group: group, currentUid: uid),
       MembersTab(group: group, canManage: _canManageGroup, canEditNames: _canEditNames, currentUid: uid),
       ContributionsTab(group: group, canApprove: _canApprove, canCancel: _canCancel, currentUid: uid),
-      BuilderPaymentScreen(group: group, canRecord: _canRecordPayment),
+      if (_outgoingTabKey != null) BuilderPaymentScreen(group: group, canRecord: _canRecordPayment),
+      if (_hasLottery) LotteryScreen(group: group, canDraw: _canRunLottery, currentUid: uid),
       if (_canViewReports) ReportsScreen(group: group, canView: true),
       TransparencyScreen(group: group),
       if (_canViewAudit) AuditLogScreen(groupId: group.id, canView: true),

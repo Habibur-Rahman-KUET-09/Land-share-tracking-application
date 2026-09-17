@@ -48,7 +48,10 @@ class PdfExportService {
       );
     }
 
-    final subtitle = await label('${group.name} — ${group.landLocation}', fontSize: 16, bold: true);
+    // Only land groups have a location; a savings or lottery group would
+    // otherwise get a heading trailing an empty " — ".
+    final heading = group.landLocation.isEmpty ? group.name : '${group.name} — ${group.landLocation}';
+    final subtitle = await label(heading, fontSize: 16, bold: true);
 
     final memberHeaderRow = pw.TableRow(
       decoration: const pw.BoxDecoration(color: PdfColors.grey300),
@@ -219,8 +222,9 @@ class PdfExportService {
     }
 
     final activeMembers = members.where((m) => m.isActive).toList();
+    final heading = group.landLocation.isEmpty ? group.name : '${group.name} — ${group.landLocation}';
     final subtitle = await label(
-      '${group.name} — ${group.landLocation} — মাসভিত্তিক পেমেন্ট ম্যাট্রিক্স',
+      '$heading — মাসভিত্তিক পেমেন্ট ম্যাট্রিক্স',
       fontSize: 14,
       bold: true,
     );

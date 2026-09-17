@@ -10,6 +10,7 @@ import '../../services/contribution_service.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/group_type_labels.dart';
 import '../../widgets/member_name.dart';
 
 /// FR 2.8 "Transparency Feature" — সব member যেন গ্রুপের সম্মিলিত হিসাব
@@ -54,23 +55,30 @@ class TransparencyScreen extends StatelessWidget {
                               totalCollected,
                               icon: Icons.trending_up,
                               iconColor: AppColors.approvedFg,
+                              isLast: group.groupType.outgoingTabKey == null,
                             ),
-                            _row(
-                              context,
-                              S.t(context, 'total_remitted'),
-                              totalRemitted,
-                              icon: Icons.account_balance_outlined,
-                              iconColor: AppColors.roleCollectorFg,
-                            ),
-                            _row(
-                              context,
-                              S.t(context, 'difference'),
-                              difference,
-                              icon: Icons.balance_outlined,
-                              iconColor: AppColors.roleAdminFg,
-                              isLast: true,
-                              negative: difference < 0,
-                            ),
+                            // A lottery has no outgoing ledger — the pot goes
+                            // straight to each month's winner, which the
+                            // Lottery tab records — so there's nothing to
+                            // reconcile against here.
+                            if (group.groupType.outgoingTabKey != null) ...[
+                              _row(
+                                context,
+                                S.t(context, group.groupType.outgoingTotalKey),
+                                totalRemitted,
+                                icon: Icons.account_balance_outlined,
+                                iconColor: AppColors.roleCollectorFg,
+                              ),
+                              _row(
+                                context,
+                                S.t(context, 'difference'),
+                                difference,
+                                icon: Icons.balance_outlined,
+                                iconColor: AppColors.roleAdminFg,
+                                isLast: true,
+                                negative: difference < 0,
+                              ),
+                            ],
                           ],
                         ),
                       ),

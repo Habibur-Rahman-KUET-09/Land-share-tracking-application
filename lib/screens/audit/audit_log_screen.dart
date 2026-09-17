@@ -38,6 +38,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     'reject_contribution': 'কিস্তি প্রত্যাখ্যান',
     'cancel_contribution': 'কিস্তি বাতিল',
     'record_builder_payment': 'বিল্ডারকে জমার এন্ট্রি',
+    'lottery_draw': 'লটারি ড্র',
   };
 
   static const _actionIcons = {
@@ -53,6 +54,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     'reject_contribution': Icons.cancel_outlined,
     'cancel_contribution': Icons.undo_outlined,
     'record_builder_payment': Icons.account_balance_outlined,
+    'lottery_draw': Icons.casino_outlined,
   };
 
   static const _actionColors = {
@@ -68,6 +70,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     'reject_contribution': (Color(0xFFFCEBEB), Color(0xFF791F1F)),
     'cancel_contribution': (Color(0xFFEDEDED), Color(0xFF5A5A5A)),
     'record_builder_payment': (Color(0xFFE0F2F1), Color(0xFF00695C)),
+    'lottery_draw': (Color(0xFFFFF3E0), Color(0xFF8A5300)),
   };
 
   @override

@@ -8,6 +8,7 @@ import '../../models/plan_history_entry.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/group_type_labels.dart';
 import '../../widgets/kistify_app_bar.dart';
 
 /// FR Finalized Decision 4: "Installment Plan ফিক্সড না — ভবিষ্যতে
@@ -70,18 +71,21 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          TextFormField(
-            controller: _totalInstallmentsCtrl,
-            decoration:
-                InputDecoration(labelText: S.t(context, 'total_installments'), border: const OutlineInputBorder()),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          ),
-          const SizedBox(height: 12),
+          // A lottery's length is its member count, not a number anyone sets.
+          if (widget.group.groupType.hasInstallmentCount) ...[
+            TextFormField(
+              controller: _totalInstallmentsCtrl,
+              decoration:
+                  InputDecoration(labelText: S.t(context, 'total_installments'), border: const OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            ),
+            const SizedBox(height: 12),
+          ],
           TextFormField(
             controller: _monthlyTotalCtrl,
             decoration: InputDecoration(
-              labelText: S.t(context, 'monthly_total_to_builder'),
+              labelText: S.t(context, widget.group.groupType.monthlyTotalKey),
               border: const OutlineInputBorder(),
             ),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),

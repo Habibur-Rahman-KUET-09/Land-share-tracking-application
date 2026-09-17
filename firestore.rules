@@ -56,6 +56,14 @@ service cloud.firestore {
       return isSignedIn() && myRole(groupId) in ['creator', 'collector'];
     }
 
+    // "One man army" groups: one person records everything themselves, so
+    // there is no second party to satisfy Maker-Checker. Their entries are
+    // written already-approved, and they may record on any member's
+    // behalf — both of which the normal contribution rules forbid.
+    function isSingleManagerGroup(groupId) {
+      return get(/databases/$(database)/documents/groups/$(groupId)).data.get('singleManager', false) == true;
+    }
+
     // A group's Creator/Admin correcting another member's display name or
     // profile email from that group's Members tab (there's no self-service
     // profile editor). [groupId] here is a value the *write itself*
@@ -160,10 +168,21 @@ service cloud.firestore {
         allow read: if isGroupMember(groupId);
         // Submit: any member, only for themselves, always starting
         // "pendingConfirmation". Receipt photo is optional.
-        allow create: if isGroupMember(groupId) &&
-          request.resource.data.memberId == request.auth.uid &&
-          request.resource.data.submittedBy == request.auth.uid &&
-          request.resource.data.status == 'pendingConfirmation';
+        //
+        // Second branch — a "one man army" group, where the single manager
+        // records entries for everyone and nobody else can approve them:
+        // they may book an entry against any member, already approved, as
+        // long as they're the one recording it and hold an approver role.
+        allow create: if isGroupMember(groupId) && (
+          (request.resource.data.memberId == request.auth.uid &&
+            request.resource.data.submittedBy == request.auth.uid &&
+            request.resource.data.status == 'pendingConfirmation') ||
+          (isSingleManagerGroup(groupId) &&
+            isGroupApprover(groupId) &&
+            request.resource.data.submittedBy == request.auth.uid &&
+            request.resource.data.approvedBy == request.auth.uid &&
+            request.resource.data.status == 'approved')
+        );
         allow update: if isGroupMember(groupId) && (
           // Approve/reject: an Admin/Collector/Creator who is NOT the
           // submitter or the member the entry belongs to (Maker-Checker).
@@ -184,6 +203,20 @@ service cloud.firestore {
       match /builderPayments/{paymentId} {
         allow read: if isGroupMember(groupId);
         allow create, update: if isGroupCollectorRole(groupId);
+        allow delete: if isGroupCreator(groupId);
+      }
+
+      // Lottery (সমিতি/ROSCA) groups: every member can see who won what
+      // and when — that visibility is the whole point of drawing by lot.
+      // Only an Admin/Creator runs a draw, and a result is never editable
+      // afterwards: a rewritten winner would be indistinguishable from a
+      // real one. A wrong draw has to be deleted (Creator) and redone.
+      match /lotteryDraws/{drawId} {
+        allow read: if isGroupMember(groupId);
+        allow create: if isGroupCanceller(groupId) &&
+          request.resource.data.drawnBy == request.auth.uid &&
+          request.resource.data.winnerUid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+        allow update: if false;
         allow delete: if isGroupCreator(groupId);
       }
 

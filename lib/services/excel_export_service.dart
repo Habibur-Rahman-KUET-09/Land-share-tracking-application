@@ -28,7 +28,10 @@ class ExcelExportService {
     }
     excel.setDefaultSheet(sheetName);
 
-    sheet.appendRow([TextCellValue('${group.name} — ${group.landLocation}')]);
+    // Only land groups have a location (see PdfExportService for the same).
+    sheet.appendRow([
+      TextCellValue(group.landLocation.isEmpty ? group.name : '${group.name} — ${group.landLocation}'),
+    ]);
     sheet.appendRow([TextCellValue('')]);
 
     sheet.appendRow([
@@ -116,7 +119,8 @@ class ExcelExportService {
     }
     excel.setDefaultSheet(sheetName);
 
-    sheet.appendRow([TextCellValue('${group.name} — ${group.landLocation} — মাসভিত্তিক পেমেন্ট ম্যাট্রিক্স')]);
+    final heading = group.landLocation.isEmpty ? group.name : '${group.name} — ${group.landLocation}';
+    sheet.appendRow([TextCellValue('$heading — মাসভিত্তিক পেমেন্ট ম্যাট্রিক্স')]);
     sheet.appendRow([TextCellValue('')]);
 
     final activeMembers = members.where((m) => m.isActive).toList();

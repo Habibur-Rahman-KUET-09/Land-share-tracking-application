@@ -9,6 +9,7 @@ import '../../services/group_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/due_calculator.dart';
+import '../../utils/group_type_labels.dart';
 import '../../widgets/member_name.dart';
 import '../../widgets/status_chip.dart';
 
@@ -55,32 +56,44 @@ class DashboardScreen extends StatelessWidget {
               if (sum >= group.monthlyTotalToBuilder - 0.5) monthsCompleted++;
             }
 
+            // A lottery has no end figure to progress towards, and a savings
+            // group's target is optional — without one this card would read
+            // "৳0 / ৳0", so it's dropped rather than shown empty.
+            final hasTarget = group.totalLandValue > 0;
+
+            // A lottery runs exactly one round per member, so its length is
+            // the membership rather than a planned installment count.
+            final totalMonths =
+                group.groupType.hasInstallmentCount ? group.totalInstallments : members.length;
+
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _StatCard(
-                  title: S.t(context, 'overall_progress'),
-                  icon: Icons.trending_up,
-                  iconColor: AppColors.approvedFg,
-                  child: Column(
-                    children: [
-                      _ProgressBar(value: overallPercent.toDouble(), color: AppColors.approvedFg),
-                      const SizedBox(height: 10),
-                      Text(
-                        '${(overallPercent * 100).toStringAsFixed(1)}%',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: AppColors.heading),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${CurrencyFormatter.format(totalCollectedAllTime)} / ${CurrencyFormatter.format(group.totalLandValue)}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppColors.mutedText, fontSize: 12),
-                      ),
-                    ],
+                if (hasTarget) ...[
+                  _StatCard(
+                    title: S.t(context, 'overall_progress'),
+                    icon: Icons.trending_up,
+                    iconColor: AppColors.approvedFg,
+                    child: Column(
+                      children: [
+                        _ProgressBar(value: overallPercent.toDouble(), color: AppColors.approvedFg),
+                        const SizedBox(height: 10),
+                        Text(
+                          '${(overallPercent * 100).toStringAsFixed(1)}%',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: AppColors.heading),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${CurrencyFormatter.format(totalCollectedAllTime)} / ${CurrencyFormatter.format(group.totalLandValue)}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.mutedText, fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
+                ],
                 _StatCard(
                   title: '${S.t(context, 'this_month')} (${now.month}/${now.year})',
                   icon: Icons.calendar_month_outlined,
@@ -102,20 +115,21 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _StatCard(
-                  title: 'কিস্তি অগ্রগতি',
+                  title: S.t(
+                    context,
+                    group.groupType.hasInstallmentCount ? 'installment_progress' : 'cycle_progress',
+                  ),
                   icon: Icons.flag_outlined,
                   iconColor: AppColors.roleCreatorFg,
                   child: Column(
                     children: [
                       _ProgressBar(
-                        value: group.totalInstallments <= 0
-                            ? 0
-                            : (monthsCompleted / group.totalInstallments).clamp(0, 1.0),
+                        value: totalMonths <= 0 ? 0 : (monthsCompleted / totalMonths).clamp(0, 1.0),
                         color: AppColors.roleCreatorFg,
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        '$monthsCompleted / ${group.totalInstallments} মাস সম্পূর্ণ',
+                        '$monthsCompleted / $totalMonths মাস সম্পূর্ণ',
                         textAlign: TextAlign.center,
                         style: const TextStyle(fontSize: 14, color: AppColors.heading),
                       ),

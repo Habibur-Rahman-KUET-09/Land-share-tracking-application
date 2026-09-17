@@ -6,6 +6,7 @@ import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/group_type_labels.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/kistify_app_bar.dart';
 import '../home/group_list_screen.dart';
@@ -24,6 +25,32 @@ class GroupManagementScreen extends StatefulWidget {
 class _GroupManagementScreenState extends State<GroupManagementScreen> {
   bool _deleting = false;
   bool _renaming = false;
+  late bool _singleManager = widget.group.singleManager;
+  bool _savingMode = false;
+
+  Future<void> _setSingleManager(bool value) async {
+    setState(() {
+      _singleManager = value;
+      _savingMode = true;
+    });
+    try {
+      final uid = context.read<AppAuthProvider>().firebaseUser!.uid;
+      await GroupService().setSingleManager(
+        groupId: widget.group.id,
+        singleManager: value,
+        editedBy: uid,
+      );
+    } catch (e) {
+      // Put the switch back where it was — leaving it flipped would claim a
+      // change that Firestore rejected.
+      if (mounted) {
+        setState(() => _singleManager = !value);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _savingMode = false);
+    }
+  }
 
   Future<void> _rename() async {
     final ctrl = TextEditingController(text: widget.group.name);
@@ -120,6 +147,37 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => EditPlanScreen(group: widget.group)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: const Color(0x1A0F6E5C),
+                foregroundColor: AppColors.primary,
+                child: Icon(widget.group.groupType.icon),
+              ),
+              title: Text(S.t(context, 'group_type')),
+              // Read-only: switching an existing group's type would leave its
+              // recorded entries meaning something they never meant.
+              subtitle: Text(S.t(context, widget.group.groupType.nameKey)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: SwitchListTile(
+              secondary: const CircleAvatar(
+                backgroundColor: Color(0x1A0F6E5C),
+                foregroundColor: AppColors.primary,
+                child: Icon(Icons.person_pin_outlined),
+              ),
+              value: _singleManager,
+              onChanged: _savingMode ? null : _setSingleManager,
+              title: Text(S.t(context, 'single_manager')),
+              subtitle: Text(
+                S.t(context, 'single_manager_desc'),
+                style: const TextStyle(fontSize: 12.5),
               ),
             ),
           ),
