@@ -54,20 +54,30 @@ class EntitlementService {
   /// out of their own group by inviting them to theirs.
   ///
   /// The entitlement is per group, so "how many groups may I create" needs a
-  /// tie-breaker: having paid for any one group lifts the cap. That keeps
-  /// one payment meaning one payer — the person running the সমিতি — rather
-  /// than forcing them to buy a second thing to open a second group.
+  /// tie-breaker: the best tier the user has paid for on any of their groups
+  /// sets the cap. That keeps one payment meaning one payer — the person
+  /// running the সমিতি — rather than forcing them to buy a second thing to
+  /// open a second group.
   static Entitlement createGroup({
     required int createdGroupCount,
-    required bool hasProGroup,
+    required GroupTier bestTierOwned,
   }) {
-    if (!active || hasProGroup) return const Entitlement.allow();
-    const limits = TierLimits.free;
+    if (!active) return const Entitlement.allow();
+    final limits = TierLimits.of(bestTierOwned);
     if (limits.groupsUnlimited) return const Entitlement.allow();
     if (createdGroupCount < limits.maxGroupsCreated) {
       return const Entitlement.allow();
     }
     return const Entitlement.deny('limit_groups_reached');
+  }
+
+  /// The best tier among the groups a user owns — what [createGroup] reads.
+  static GroupTier bestTierAmong(Iterable<LandGroup> groups) {
+    var best = GroupTier.free;
+    for (final g in groups) {
+      if (g.activeTier.atLeast(best)) best = g.activeTier;
+    }
+    return best;
   }
 
   static Entitlement export(LandGroup group) {

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../config/monetization.dart';
 import '../../l10n/app_strings.dart';
+import '../../models/group_tier.dart';
 import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
@@ -216,7 +217,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
                 ),
                 title: Text(S.t(context, 'upgrade_title')),
                 subtitle: Text(
-                  widget.group.isPro ? S.t(context, 'tier_pro') : S.t(context, 'tier_free'),
+                  S.t(context, tierNameKey(widget.group.activeTier)),
                   style: const TextStyle(fontSize: 12.5),
                 ),
                 trailing: const Icon(Icons.chevron_right),

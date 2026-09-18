@@ -190,7 +190,7 @@ Future<void> _newGroup(BuildContext context, List<LandGroup> groups, String uid)
   final mine = groups.where((g) => g.createdBy == uid).toList();
   final check = EntitlementService.createGroup(
     createdGroupCount: mine.length,
-    hasProGroup: mine.any((g) => g.isPro),
+    bestTierOwned: EntitlementService.bestTierAmong(mine),
   );
   if (check.blocked && mine.isNotEmpty) {
     // The upgrade attaches to a group, so offer the one they already run.

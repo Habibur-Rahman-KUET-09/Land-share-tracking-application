@@ -1,4 +1,5 @@
 import '../config/monetization.dart';
+import '../models/group_tier.dart';
 
 /// Outcome of a purchase attempt, kept deliberately coarse — the UI only
 /// needs to know whether to celebrate, stay quiet, or show an error.
@@ -11,7 +12,7 @@ class BillingResult {
 }
 
 /// A store product, as the store describes it. [price] is the store's own
-/// localized string ("৳৪০০.০০"), never a number we formatted ourselves —
+/// localized string ("৳২০০.০০"), never a number we formatted ourselves —
 /// the price shown to a user must be the one they will actually be charged.
 class BillingProduct {
   final String id;
@@ -20,7 +21,7 @@ class BillingProduct {
   const BillingProduct({required this.id, required this.title, required this.price});
 }
 
-/// The store-facing half of the paid tier.
+/// The store-facing half of the paid tiers.
 ///
 /// Intentionally an interface with only a stub behind it: the
 /// `in_app_purchase` package is not a dependency yet, so nothing dead ships
@@ -28,8 +29,9 @@ class BillingProduct {
 ///
 /// Implementing it later means:
 ///  * add `in_app_purchase` to pubspec.yaml,
-///  * write `PlayBillingService implements BillingService` that queries
-///    [Monetization.proProductId] and starts the purchase flow,
+///  * write `PlayBillingService implements BillingService` that queries the
+///    product ids from [Monetization.productIdFor] and starts the purchase
+///    flow,
 ///  * send the purchase token to a Cloud Function that verifies it against
 ///    the Play Developer API and writes `tier`/`tierExpiresAt` on the group
 ///    doc with the Admin SDK,
@@ -40,13 +42,20 @@ class BillingProduct {
 abstract class BillingService {
   Future<bool> isAvailable();
 
-  Future<BillingProduct?> loadProProduct();
+  /// Every purchasable tier the store could price, keyed by tier. A tier
+  /// missing from the map is one the store didn't return — show it, but
+  /// don't let it be bought.
+  Future<Map<GroupTier, BillingProduct>> loadProducts();
 
-  /// [groupId] is what the entitlement attaches to — one paid group, not a
+  /// [groupId] is what the entitlement attaches to — a paid group, not a
   /// paid account (see [Monetization.perGroupEntitlement]). It travels to
   /// the store as the obfuscated account id so the verifying function knows
   /// which group doc to write.
-  Future<BillingResult> purchasePro(String groupId);
+  ///
+  /// Upgrading from one paid tier to a higher one is the same call: Play
+  /// handles the proration itself when both products are in one
+  /// subscription group, which is how they must be configured.
+  Future<BillingResult> purchase({required String groupId, required GroupTier tier});
 
   /// Re-delivers purchases the store knows about but this install doesn't
   /// (reinstall, new device). Also a store review requirement on iOS.
@@ -65,10 +74,10 @@ class UnavailableBillingService implements BillingService {
   Future<bool> isAvailable() async => false;
 
   @override
-  Future<BillingProduct?> loadProProduct() async => null;
+  Future<Map<GroupTier, BillingProduct>> loadProducts() async => const {};
 
   @override
-  Future<BillingResult> purchasePro(String groupId) async =>
+  Future<BillingResult> purchase({required String groupId, required GroupTier tier}) async =>
       const BillingResult(BillingOutcome.unavailable);
 
   @override

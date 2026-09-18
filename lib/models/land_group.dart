@@ -170,15 +170,17 @@ class LandGroup {
     );
   }
 
-  /// The tier actually in force right now — a `pro` group whose paid period
-  /// has run out reads as free again until it is renewed, without anything
+  /// The tier actually in force right now — a paid group whose period has
+  /// run out reads as free again until it is renewed, without anything
   /// having to rewrite the doc at the moment it lapses.
   GroupTier get activeTier {
-    if (tier != GroupTier.pro) return GroupTier.free;
+    if (tier == GroupTier.free) return GroupTier.free;
     final until = tierExpiresAt;
     if (until != null && until.isBefore(DateTime.now())) return GroupTier.free;
-    return GroupTier.pro;
+    return tier;
   }
 
-  bool get isPro => activeTier == GroupTier.pro;
+  /// Convenience for "is this group on a paid tier right now" — the tier
+  /// itself answers which one (`group.activeTier`).
+  bool get isPaid => activeTier.isPaid;
 }
