@@ -171,6 +171,7 @@ class S {
       'sign_in_failed': 'ইমেইল বা পাসওয়ার্ড ঠিক নেই।',
       'enter_email_first': 'আগে আপনার ইমেইল ঠিকানাটি লিখুন।',
       'how_it_works': 'কীভাবে কাজ করে',
+      'sop': 'বিস্তারিত নিয়মকানুন (SOP)',
       'welcome_title': 'Kistify তে স্বাগতম',
       'welcome_steps': 'শুরু করতে তিনটি ধাপ:\n\n'
           '১. একটি গ্রুপ তৈরি করুন\n'
@@ -358,6 +359,7 @@ class S {
       'sign_in_failed': 'That email or password is not right.',
       'enter_email_first': 'Enter your email address first.',
       'how_it_works': 'How it works',
+      'sop': 'Full procedure (SOP)',
       'welcome_title': 'Welcome to Kistify',
       'welcome_steps': 'Three steps to get going:\n\n'
           '1. Create a group\n'

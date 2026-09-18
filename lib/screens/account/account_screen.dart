@@ -106,6 +106,20 @@ class AccountScreen extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Color(0x1A0F6E5C),
+                foregroundColor: AppColors.primary,
+                child: Icon(Icons.menu_book_outlined),
+              ),
+              title: Text(S.t(context, 'sop')),
+              subtitle: const Text(sopUrl, style: TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.open_in_new, size: 18),
+              onTap: () => openSop(context),
+            ),
+          ),
           const SizedBox(height: 24),
           Card(
             color: Theme.of(context).colorScheme.errorContainer,

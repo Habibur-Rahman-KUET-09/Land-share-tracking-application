@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../providers/locale_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/kistify_app_bar.dart';
+
+/// Where the full standard operating procedure lives. Kept next to the
+/// screen that links to it so the two can't drift apart.
+const sopUrl = 'https://kistify.web.app/sop';
+
+/// Opens the SOP in the device browser, and says so plainly if it can't
+/// rather than doing nothing when a tap looked like it should work.
+Future<void> openSop(BuildContext context) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final ok = await launchUrl(Uri.parse(sopUrl), mode: LaunchMode.externalApplication);
+  if (!ok) {
+    messenger.showSnackBar(const SnackBar(content: Text(sopUrl)));
+  }
+}
 
 /// The short version of the SOP, inside the app.
 ///
@@ -58,13 +73,19 @@ class HelpScreen extends StatelessWidget {
                 ),
               ),
             ),
+          const SizedBox(height: 4),
+          // This used to be a line of plain text naming the URL, which left
+          // the full SOP with no way to reach it from inside the app at all.
+          OutlinedButton.icon(
+            onPressed: () => openSop(context),
+            icon: const Icon(Icons.menu_book_outlined, size: 18),
+            label: Text(bn ? 'বিস্তারিত নিয়মকানুন (SOP)' : 'Full standard operating procedure'),
+          ),
           const SizedBox(height: 8),
           Text(
-            bn
-                ? 'বিস্তারিত নিয়মকানুন (SOP) পাওয়া যাবে: kistify.web.app/sop'
-                : 'The full standard operating procedure is at kistify.web.app/sop',
+            sopUrl,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
+            style: const TextStyle(fontSize: 11.5, color: AppColors.mutedText),
           ),
           const SizedBox(height: 24),
         ],

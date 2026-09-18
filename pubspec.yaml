@@ -54,6 +54,10 @@ dependencies:
   # Receipt photo upload (camera/gallery)
   image_picker: ^1.1.2
 
+  # Opening the SOP/help pages in the browser. Already present transitively
+  # (printing pulls it in); declared here because we import it directly.
+  url_launcher: ^6.3.1
+
   # Picking the .xlsx for data migration — works on mobile and web.
   file_picker: ">=8.0.0 <11.0.0"
 
