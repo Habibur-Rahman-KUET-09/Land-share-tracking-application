@@ -1,0 +1,35 @@
+name: Deploy Rules
+
+# Publishes firestore.rules, its indexes, and storage.rules straight from
+# this repository whenever they change.
+#
+# Until now these were pasted into the Firebase console by hand, which meant
+# the rules the app actually ran under could silently drift from the ones in
+# git — and every rules change needed a "remember to republish" reminder.
+# The repository is the source of truth; this makes that true in practice.
+#
+# Uses the same two secrets the other deploys already use:
+#   FIREBASE_TOKEN, FIREBASE_PROJECT_ID
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - 'firestore.rules'
+      - 'firestore.indexes.json'
+      - 'storage.rules'
+      - 'firebase.json'
+      - '.github/workflows/deploy-rules.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN" --non-interactive
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}

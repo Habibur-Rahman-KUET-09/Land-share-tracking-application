@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
@@ -105,12 +106,24 @@ class LandInstallmentApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => AppAuthProvider()),
       ],
-      child: MaterialApp(
+      child: Consumer<LocaleProvider>(
+        builder: (context, localeProvider, _) => MaterialApp(
         navigatorKey: navigatorKey,
         scaffoldMessengerKey: scaffoldMessengerKey,
         debugShowCheckedModeBanner: false,
         title: 'Kistify',
         theme: buildAppTheme(),
+        // flutter_localizations was a declared dependency doing nothing:
+        // without these, every Material widget with built-in text — the
+        // date pickers most visibly — rendered in English while the rest of
+        // the app spoke Bangla.
+        locale: localeProvider.locale,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('bn'), Locale('en')],
         // Recent Android targets draw edge-to-edge by default, so content can
         // sit behind the system nav bar unless explicitly inset — one global
         // SafeArea here covers every screen instead of patching each one.
@@ -119,6 +132,7 @@ class LandInstallmentApp extends StatelessWidget {
         // as a plain black bar instead of the app's themed header).
         builder: (context, child) => SafeArea(top: false, child: child!),
         home: const AuthGate(),
+        ),
       ),
     );
   }

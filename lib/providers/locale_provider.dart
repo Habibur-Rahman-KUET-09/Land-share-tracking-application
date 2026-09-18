@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// NFR: "Bangla + English উভয় ভাষা সাপোর্ট (UI language toggle)". Backed by
@@ -11,6 +11,12 @@ class LocaleProvider extends ChangeNotifier {
   String _language = 'bn'; // 'bn' | 'en'
   String get language => _language;
   bool get isBangla => _language == 'bn';
+
+  /// Handed to MaterialApp so Flutter's own widgets follow the same toggle —
+  /// without it the date pickers stay English no matter what the app's text
+  /// says, because MaterialApp falls back to its default English
+  /// localizations.
+  Locale get locale => Locale(_language);
 
   LocaleProvider() {
     _load();
