@@ -73,14 +73,20 @@ jobs:
         if: always()
         run: rm -f android/upload-keystore.jks android/key.properties
 
+      # Names say what to do with each file: one installs on a phone, the
+      # other only ever goes to Play. They also avoid the word "kistify",
+      # which is a secret value now (the key alias) and so gets masked to
+      # *** in the logs, making the artifact impossible to identify there.
       - uses: actions/upload-artifact@v4
         with:
-          name: land-installment-tracker-apk
+          name: android-apk-install-on-phone
           path: build/app/outputs/flutter-apk/*.apk
           retention-days: 30
 
+      # An .aab cannot be installed on a device — Play opens it and builds
+      # a per-device APK from it. Sideloading needs the APK above.
       - uses: actions/upload-artifact@v4
         with:
-          name: kistify-play-bundle
+          name: play-store-bundle-aab-upload-only
           path: build/app/outputs/bundle/release/*.aab
           retention-days: 30
