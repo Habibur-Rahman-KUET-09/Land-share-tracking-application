@@ -184,6 +184,21 @@ class ContributionService {
         .map((snap) => snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data())).toList());
   }
 
+  /// Just one month's entries, for screens that only ever show a single
+  /// month — the lottery pot, most obviously. Two equality filters merge
+  /// single-field indexes, so this needs no composite index.
+  ///
+  /// The alternative (streaming the group's whole history and filtering in
+  /// Dart) bills a read per document every time the screen opens, and grows
+  /// without bound as the group ages.
+  Stream<List<Contribution>> watchMonth(String groupId, int month, int year) {
+    return _col(groupId)
+        .where('month', isEqualTo: month)
+        .where('year', isEqualTo: year)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data())).toList());
+  }
+
   Stream<List<Contribution>> watchMemberContributions(String groupId, String memberId) {
     return _col(groupId).where('memberId', isEqualTo: memberId).snapshots().map(
           (snap) => snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data())).toList(),

@@ -156,7 +156,17 @@ service cloud.firestore {
             request.auth.uid == memberUid &&
             request.resource.data.role == 'creator' &&
             get(/databases/$(database)/documents/groups/$(groupId)).data.createdBy == request.auth.uid);
-        allow update, delete: if isGroupCreator(groupId);
+        // A role *change* is the sensitive part: it may never target your
+        // own member doc (no self-promotion, no accidental self-demotion
+        // that would leave the group with no creator) and may never hand
+        // out 'creator', which exists exactly once and is set at creation.
+        // Edits that leave the role alone — monthlyAmount, exit status —
+        // stay open to the creator as before.
+        allow update: if isGroupCreator(groupId) && (
+          request.resource.data.role == resource.data.role ||
+          (memberUid != request.auth.uid && request.resource.data.role != 'creator')
+        );
+        allow delete: if isGroupCreator(groupId);
       }
 
       match /planHistory/{entryId} {

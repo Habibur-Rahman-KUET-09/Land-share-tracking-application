@@ -1,8 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
-import '../../models/app_user.dart';
 import '../../models/builder_payment.dart';
 import '../../models/contribution.dart';
 import '../../models/group_member.dart';
@@ -12,6 +10,7 @@ import '../../services/contribution_service.dart';
 import '../../services/excel_export_service.dart';
 import '../../services/group_service.dart';
 import '../../services/pdf_export_service.dart';
+import '../../services/user_directory.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/empty_state.dart';
@@ -32,13 +31,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   String? _selectedMemberId;
   bool _exporting = false;
 
-  Future<Map<String, String>> _resolveMemberNames(List<GroupMember> members) async {
-    final names = <String, String>{};
-    for (final m in members) {
-      final snap = await FirebaseFirestore.instance.collection('users').doc(m.uid).get();
-      names[m.uid] = snap.exists ? AppUser.fromMap(m.uid, snap.data()!).name : m.uid;
-    }
-    return names;
+  Future<Map<String, String>> _resolveMemberNames(List<GroupMember> members) {
+    return UserDirectory.instance.names(members.map((m) => m.uid));
   }
 
   Future<void> _withExportData(

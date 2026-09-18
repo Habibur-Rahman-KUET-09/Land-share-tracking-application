@@ -1,10 +1,15 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../models/app_user.dart';
+import '../services/user_directory.dart';
 
-/// Resolves a uid to its users/{uid} display name — shared by every screen
-/// that lists members/contributions by id (dashboard, transparency, reports).
+/// Resolves a uid to its display name — shared by every screen that lists
+/// members/contributions by id (dashboard, transparency, reports, lottery,
+/// audit log).
+///
+/// The lookup goes through [UserDirectory], which caches it; this widget is
+/// rebuilt constantly by the streams behind those screens, and a fresh
+/// Firestore read per rebuild was costing real money for a name that almost
+/// never changes.
 class MemberName extends StatelessWidget {
   final String uid;
   final TextStyle? style;
@@ -12,12 +17,9 @@ class MemberName extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
-      builder: (context, snap) {
-        final name = snap.data?.exists == true ? AppUser.fromMap(uid, snap.data!.data()!).name : uid;
-        return Text(name, style: style);
-      },
+    return FutureBuilder<String>(
+      future: UserDirectory.instance.name(uid),
+      builder: (context, snap) => Text(snap.data ?? '…', style: style),
     );
   }
 }

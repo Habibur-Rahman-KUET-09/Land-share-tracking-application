@@ -43,8 +43,12 @@ class LotteryScreen extends StatelessWidget {
           stream: LotteryService().watch(group.id),
           builder: (context, drawSnap) {
             final draws = drawSnap.data ?? const <LotteryDraw>[];
+            // Only this month's entries: the pot is this month's collection,
+            // so streaming the group's entire history to add up one month of
+            // it was paying for every read twice over.
+            final now = DateTime.now();
             return StreamBuilder<List<Contribution>>(
-              stream: ContributionService().watchGroupContributions(group.id),
+              stream: ContributionService().watchMonth(group.id, now.month, now.year),
               builder: (context, contribSnap) {
                 final approved = (contribSnap.data ?? const <Contribution>[])
                     .where((c) => c.status == ContributionStatus.approved)

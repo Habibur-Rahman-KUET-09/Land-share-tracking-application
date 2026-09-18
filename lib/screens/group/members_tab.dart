@@ -7,6 +7,7 @@ import '../../models/app_user.dart';
 import '../../models/group_member.dart';
 import '../../models/land_group.dart';
 import '../../services/auth_service.dart';
+import '../../services/user_directory.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
@@ -182,10 +183,10 @@ class _MemberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance.collection('users').doc(member.uid).get(),
+    return FutureBuilder<AppUser?>(
+      future: UserDirectory.instance.user(member.uid),
       builder: (context, snap) {
-        final profile = snap.data?.exists == true ? AppUser.fromMap(member.uid, snap.data!.data()!) : null;
+        final profile = snap.data;
         final name = profile?.name ?? member.uid;
         final (roleBg, roleFg) = _roleColors(member.role);
         final (avatarBg, avatarFg) = AppColors.accentFor(member.uid);

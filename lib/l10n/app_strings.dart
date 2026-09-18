@@ -150,6 +150,11 @@ class S {
       'entry_for_member': 'কার এন্ট্রি',
       'installment_progress': 'কিস্তি অগ্রগতি',
       'cycle_progress': 'চক্রের অগ্রগতি',
+      'needs_second_approver':
+          'নিজের কিস্তির এন্ট্রি দেওয়ার আগে আরেকজন Admin বা Collector যোগ করুন — '
+              'নিজের এন্ট্রি নিজে অনুমোদন করা যায় না, তাই এখন এন্ট্রি দিলে সেটি চিরকাল '
+              'অনুমোদনের অপেক্ষায় পড়ে থাকবে। (একা ম্যানেজ করতে চাইলে Group Management '
+              'থেকে "আমি একাই ম্যানেজ করব" চালু করুন।)',
     },
     'en': {
       'app_title': 'Kistify',
@@ -291,6 +296,11 @@ class S {
       'entry_for_member': 'Entry for',
       'installment_progress': 'Installment progress',
       'cycle_progress': 'Cycle progress',
+      'needs_second_approver':
+          'Add another Admin or Collector before recording your own instalment — '
+              'nobody can approve their own entry, so one filed now would sit pending '
+              'forever. (To run the group single-handed, switch on "I will manage this '
+              'alone" in Group Management.)',
     },
   };
 

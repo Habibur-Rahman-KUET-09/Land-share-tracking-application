@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/app_user.dart';
+import 'user_directory.dart';
 
 /// Wraps FirebaseAuth for both sign-in methods the FRD requires (phone OTP
 /// and email/password), and bootstraps the matching users/{uid} profile
@@ -134,6 +135,9 @@ class AuthService {
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _auth.signOut();
+    // Cached names are per-session by design: whoever signs in next must
+    // not see anything resolved under the previous account's access.
+    UserDirectory.instance.clear();
   }
 
   Future<AppUser?> getProfile(String uid) async {
@@ -168,6 +172,10 @@ class AuthService {
       'name': name.trim(),
       'nameLastEditedByGroupId': viaGroupId,
     });
+    // Otherwise every screen keeps showing the old name from cache until
+    // the app is restarted — and the whole point of this edit is that the
+    // name was wrong.
+    UserDirectory.instance.forget(targetUid);
   }
 
   /// Same as [updateMemberNameAsManager], for the profile's `email` field —
@@ -183,6 +191,7 @@ class AuthService {
       'email': email.trim(),
       'emailLastEditedByGroupId': viaGroupId,
     });
+    UserDirectory.instance.forget(targetUid);
   }
 
   /// Creates the users/{uid} profile document on first sign-in, for any

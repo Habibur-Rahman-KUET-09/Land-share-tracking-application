@@ -1,10 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../l10n/app_strings.dart';
-import '../../models/app_user.dart';
 import '../../models/contribution.dart';
 import '../../models/group_member.dart';
 import '../../models/land_group.dart';
@@ -48,9 +46,40 @@ class _ContributionsTabState extends State<ContributionsTab> {
   /// they land approved. See [ContributionService.submit].
   bool get _managesEveryone => widget.group.singleManager && widget.canApprove;
 
+  /// Maker-checker means nobody approves their own entry. So if the signed-in
+  /// user is the *only* active approver in the group, anything they file can
+  /// never be approved by anyone — it just sits pending forever, and the
+  /// group's totals quietly stop matching reality.
+  ///
+  /// Rather than let them walk into that, the entry action is withheld until
+  /// a second Admin/Collector exists. Other members are unaffected: their
+  /// entries have an approver (this one). Single-manager groups skip the
+  /// approval step entirely and are never blocked.
+  ///
+  /// This lives in the UI because security rules cannot count a collection —
+  /// they can only read documents they are handed a path to.
+  bool _isSoleApprover(List<GroupMember> members) {
+    if (widget.group.singleManager || !widget.canApprove) return false;
+    final approvers = members
+        .where((m) => m.isActive && m.canApproveOrRejectContribution)
+        .map((m) => m.uid)
+        .toSet();
+    return approvers.length <= 1 && approvers.contains(widget.currentUid);
+  }
+
   @override
   Widget build(BuildContext context) {
+    return StreamBuilder<List<GroupMember>>(
+      stream: GroupService().watchMembers(widget.group.id),
+      builder: (context, memberSnap) {
+        return _build(context, memberSnap.data ?? const <GroupMember>[]);
+      },
+    );
+  }
+
+  Widget _build(BuildContext context, List<GroupMember> members) {
     final showApprovalToggle = widget.canApprove && !widget.group.singleManager;
+    final soleApprover = _isSoleApprover(members);
     return Scaffold(
       body: Column(
         children: [
@@ -66,6 +95,7 @@ class _ContributionsTabState extends State<ContributionsTab> {
                 onSelectionChanged: (s) => setState(() => _showApprovals = s.first),
               ),
             ),
+          if (soleApprover) const _SoleApproverNotice(),
           DateRangeFilterBar(range: _range, onChanged: (r) => setState(() => _range = r)),
           Expanded(
             child: _showApprovals && showApprovalToggle
@@ -80,7 +110,7 @@ class _ContributionsTabState extends State<ContributionsTab> {
           ),
         ],
       ),
-      floatingActionButton: _showApprovals && showApprovalToggle
+      floatingActionButton: (_showApprovals && showApprovalToggle) || soleApprover
           ? null
           : FloatingActionButton.extended(
               onPressed: () => showDialog(
@@ -94,6 +124,36 @@ class _ContributionsTabState extends State<ContributionsTab> {
               icon: const Icon(Icons.add),
               label: Text(S.t(context, 'mark_paid')),
             ),
+    );
+  }
+}
+
+class _SoleApproverNotice extends StatelessWidget {
+  const _SoleApproverNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.pendingBg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline, size: 18, color: AppColors.pendingFg),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              S.t(context, 'needs_second_approver'),
+              style: const TextStyle(fontSize: 12.5, color: AppColors.pendingFg),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -227,14 +287,9 @@ class _ApprovalsList extends StatelessWidget {
                       children: [
                         _MethodIcon(method: c.method),
                         const SizedBox(width: 10),
-                        FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                          future: FirebaseFirestore.instance.collection('users').doc(c.memberId).get(),
-                          builder: (context, userSnap) {
-                            final name = userSnap.data?.exists == true
-                                ? AppUser.fromMap(c.memberId, userSnap.data!.data()!).name
-                                : c.memberId;
-                            return Text(name, style: const TextStyle(fontWeight: FontWeight.bold));
-                          },
+                        MemberName(
+                          uid: c.memberId,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),

@@ -301,6 +301,14 @@ class GroupService {
     if (role == GroupRole.creator) {
       throw StateError('একটি গ্রুপে একজনই Creator থাকতে পারে');
     }
+    // Nobody promotes or demotes themselves, whatever role they hold. Today
+    // only the creator can reach this method at all and their own role is
+    // already frozen above, so this changes no behaviour — it states the
+    // invariant where it belongs instead of leaving it as a side effect of
+    // who happens to have the button.
+    if (uid == actorId) {
+      throw StateError('নিজের ভূমিকা নিজে পরিবর্তন করা যাবে না');
+    }
     await _members(groupId).doc(uid).update({'role': groupRoleToString(role)});
     await _audit.log(
       groupId: groupId,
