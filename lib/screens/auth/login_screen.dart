@@ -67,7 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
       await auth.signInWithEmail(email: _emailCtrl.text.trim(), password: _passwordCtrl.text);
       _failedAttempts = 0;
       _lockedUntil = null;
-    } on FirebaseAuthException catch (e) {
+      // The exception is deliberately not inspected: every failure reports
+      // the same thing, so there is nothing here to read off it.
+    } on FirebaseAuthException {
       _failedAttempts++;
       if (_failedAttempts >= _maxAttempts) {
         _lockedUntil = DateTime.now().add(_lockout);
