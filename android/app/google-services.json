@@ -51,6 +51,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "510783432326-cqsu52nq977f2m62vqlcobgk0irh5u80.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.veryfew.kistify",
+            "certificate_hash": "70813b2938ec3e7c6abdcd5ca657085bd1c7a296"
+          }
+        },
+        {
           "client_id": "510783432326-r6v10lh4for0hoqj0ap6prpb03ht834q.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
