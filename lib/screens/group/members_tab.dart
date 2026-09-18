@@ -8,11 +8,13 @@ import '../../models/group_member.dart';
 import '../../models/land_group.dart';
 import '../../services/auth_service.dart';
 import '../../services/user_directory.dart';
+import '../../services/entitlement_service.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/status_chip.dart';
+import '../billing/upgrade_screen.dart';
 
 /// FR 2.1 member/role management. "Invite" is search-by-phone/email against
 /// already-registered users (see [_AddMemberDialog._search]) rather than a
@@ -71,10 +73,9 @@ class MembersTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Center(
                     child: TextButton.icon(
-                      onPressed: () => showDialog(
-                        context: context,
-                        builder: (_) => _AddMemberDialog(group: group, invitedBy: currentUid),
-                      ),
+                      // The member cap is counted here, where the live list
+                      // already is, rather than re-reading it in a service.
+                      onPressed: () => _addMember(context, active.length),
                       icon: const Icon(Icons.add, size: 18, color: AppColors.mutedText),
                       label: Text(S.t(context, 'add_member'), style: const TextStyle(color: AppColors.mutedText)),
                     ),
@@ -84,6 +85,22 @@ class MembersTab extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  /// Free groups top out at a member count; over it, explain and offer the
+  /// upgrade instead of opening a dialog that would fail at save time.
+  /// With monetization switched off this is always allowed.
+  Future<void> _addMember(BuildContext context, int activeMemberCount) async {
+    final check = EntitlementService.addMember(group, activeMemberCount);
+    if (check.blocked) {
+      await showUpgradePrompt(context, group: group, reasonKey: check.reasonKey!);
+      return;
+    }
+    if (!context.mounted) return;
+    await showDialog(
+      context: context,
+      builder: (_) => _AddMemberDialog(group: group, invitedBy: currentUid),
     );
   }
 }

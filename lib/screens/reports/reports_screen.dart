@@ -7,6 +7,7 @@ import '../../models/group_member.dart';
 import '../../models/land_group.dart';
 import '../../services/builder_payment_service.dart';
 import '../../services/contribution_service.dart';
+import '../../services/entitlement_service.dart';
 import '../../services/excel_export_service.dart';
 import '../../services/group_service.dart';
 import '../../services/pdf_export_service.dart';
@@ -15,6 +16,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/member_name.dart';
+import '../billing/upgrade_screen.dart';
 
 /// FR 2.7 (Reports & History): individual payment history + PDF/Excel
 /// export of the whole group's report. Admin/Creator only.
@@ -44,6 +46,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
     )
     share,
   ) async {
+    // Report download is a paid feature; with monetization off this always
+    // passes and the export runs exactly as before.
+    final check = EntitlementService.export(widget.group);
+    if (check.blocked) {
+      await showUpgradePrompt(context, group: widget.group, reasonKey: check.reasonKey!);
+      return;
+    }
     setState(() => _exporting = true);
     try {
       final members = await GroupService().watchMembers(widget.group.id).first;

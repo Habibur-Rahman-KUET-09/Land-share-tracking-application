@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/monetization.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
@@ -9,6 +10,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/group_type_labels.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/kistify_app_bar.dart';
+import '../billing/upgrade_screen.dart';
 import '../home/group_list_screen.dart';
 import '../migration/migration_screen.dart';
 import 'edit_plan_screen.dart';
@@ -201,6 +203,29 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
               ),
             ),
           ),
+          // Hidden entirely until monetization is switched on — there is no
+          // point showing a package a user cannot buy.
+          if (Monetization.enabled) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0x1A0F6E5C),
+                  foregroundColor: AppColors.primary,
+                  child: Icon(Icons.workspace_premium_outlined),
+                ),
+                title: Text(S.t(context, 'upgrade_title')),
+                subtitle: Text(
+                  widget.group.isPro ? S.t(context, 'tier_pro') : S.t(context, 'tier_free'),
+                  style: const TextStyle(fontSize: 12.5),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => UpgradeScreen(group: widget.group)),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           Card(
             color: Theme.of(context).colorScheme.errorContainer,

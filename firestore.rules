@@ -131,12 +131,23 @@ service cloud.firestore {
       // that check the way a direct resource.data read does.
       allow read: if isSignedIn() && request.auth.uid in resource.data.memberIds;
       // Creation: the creator must be listing themselves as the sole member
-      // and as createdBy (matches GroupService.createGroup).
+      // and as createdBy (matches GroupService.createGroup). A new group is
+      // always on the free tier, which it gets by NOT carrying the tier
+      // fields at all — so creating one cannot hand itself a paid tier.
       allow create: if isSignedIn() &&
         request.auth.uid in request.resource.data.memberIds &&
-        request.resource.data.createdBy == request.auth.uid;
+        request.resource.data.createdBy == request.auth.uid &&
+        !request.resource.data.keys().hasAny(['tier', 'tierExpiresAt']);
       // Group management (plan edits) and deletion are Creator-only.
-      allow update: if isSignedIn() && request.auth.uid == resource.data.createdBy;
+      // The paid tier is server-owned: `tier` and `tierExpiresAt` are
+      // written only by the purchase-verification Cloud Function through
+      // the Admin SDK, which bypasses these rules. No client may set or
+      // extend them — a modified app could at most ignore a UI limit, it
+      // can never grant itself Pro. See lib/config/monetization.dart.
+      allow update: if isSignedIn() &&
+        request.auth.uid == resource.data.createdBy &&
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['tier', 'tierExpiresAt']);
       allow delete: if isSignedIn() && request.auth.uid == resource.data.createdBy;
 
       match /members/{memberUid} {

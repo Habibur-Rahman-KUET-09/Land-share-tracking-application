@@ -118,6 +118,15 @@ CI builds from the repository and signs with a key held only as a secret.
 Imported spreadsheet rows are marked `importedAt` so bulk-approved history
 can never be mistaken for a receipt-checked approval.
 
+Paid-tier entitlement follows the same rule. `tier` and `tierExpiresAt` on
+a group doc are refused from every client by `firestore.rules` — on create
+and on update — so the only thing that can grant Pro is a server-side
+purchase verification (Admin SDK, which bypasses rules). A modified client
+can at most ignore a UI limit such as the member cap; it cannot pay itself.
+The feature is dormant while `Monetization.enabled` is `false`, but the
+rule is deployed now, because the wrong order — ship billing, then lock the
+field — is how self-granted subscriptions happen.
+
 ### A09 Logging and monitoring failures
 
 Every state change that touches money is written to the group's audit log

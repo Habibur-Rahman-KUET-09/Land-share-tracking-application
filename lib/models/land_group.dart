@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'group_tier.dart';
+
 /// FR 2.2: Flexible contribution — সবাই সমান (equal) নাকি প্রতিটি সদস্যের
 /// জন্য আলাদা amount (custom), Creator এটা group creation/edit-এ টগল করে।
 enum ContributionType { equal, custom }
@@ -63,6 +65,19 @@ class LandGroup {
   /// the spot and the manager may record them on any member's behalf.
   final bool singleManager;
   final ContributionType contributionType;
+
+  /// What this group has paid for. Server-owned: it is written only by the
+  /// purchase-verification Cloud Function via the Admin SDK, never by the
+  /// app — `firestore.rules` rejects any client write that touches `tier`
+  /// or `tierExpiresAt`, and [toMap] deliberately omits both so creating a
+  /// group can't smuggle one in. Absent on the doc means [GroupTier.free],
+  /// which is every group that exists today.
+  final GroupTier tier;
+
+  /// When a paid tier lapses. `null` on a [GroupTier.pro] group means it
+  /// doesn't expire (a grant, not a subscription).
+  final DateTime? tierExpiresAt;
+
   final String createdBy;
   final DateTime createdAt;
   final List<String> memberIds;
@@ -78,6 +93,8 @@ class LandGroup {
     required this.dueDayOfMonth,
     this.singleManager = false,
     required this.contributionType,
+    this.tier = GroupTier.free,
+    this.tierExpiresAt,
     required this.createdBy,
     required this.createdAt,
     required this.memberIds,
@@ -106,6 +123,8 @@ class LandGroup {
       dueDayOfMonth: dueDayOfMonth ?? this.dueDayOfMonth,
       singleManager: singleManager ?? this.singleManager,
       contributionType: contributionType ?? this.contributionType,
+      tier: tier,
+      tierExpiresAt: tierExpiresAt,
       createdBy: createdBy,
       createdAt: createdAt,
       memberIds: memberIds ?? this.memberIds,
@@ -143,9 +162,23 @@ class LandGroup {
       dueDayOfMonth: (map['dueDayOfMonth'] as num?)?.toInt() ?? 5,
       singleManager: (map['singleManager'] as bool?) ?? false,
       contributionType: contributionTypeFromString(map['contributionType'] as String?),
+      tier: groupTierFromString(map['tier'] as String?),
+      tierExpiresAt: (map['tierExpiresAt'] as Timestamp?)?.toDate(),
       createdBy: (map['createdBy'] as String?) ?? '',
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       memberIds: List<String>.from((map['memberIds'] as List?) ?? const []),
     );
   }
+
+  /// The tier actually in force right now — a `pro` group whose paid period
+  /// has run out reads as free again until it is renewed, without anything
+  /// having to rewrite the doc at the moment it lapses.
+  GroupTier get activeTier {
+    if (tier != GroupTier.pro) return GroupTier.free;
+    final until = tierExpiresAt;
+    if (until != null && until.isBefore(DateTime.now())) return GroupTier.free;
+    return GroupTier.pro;
+  }
+
+  bool get isPro => activeTier == GroupTier.pro;
 }

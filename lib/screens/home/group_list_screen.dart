@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/entitlement_service.dart';
 import '../../services/group_service.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
@@ -12,6 +13,7 @@ import '../../utils/group_type_labels.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/kistify_mark.dart';
 import '../account/account_screen.dart';
+import '../billing/upgrade_screen.dart';
 import '../group/create_group_screen.dart';
 import '../group/group_detail_screen.dart';
 import '../help/help_screen.dart';
@@ -117,9 +119,7 @@ class GroupListScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 FilledButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CreateGroupScreen()),
-                  ),
+                  onPressed: () => _newGroup(context, const [], uid),
                   icon: const Icon(Icons.add),
                   label: Text(S.t(context, 'new_group')),
                 ),
@@ -173,7 +173,7 @@ class GroupListScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-              const _NewGroupLink(),
+              _NewGroupLink(groups: groups, uid: uid),
             ],
           );
         },
@@ -182,8 +182,31 @@ class GroupListScreen extends StatelessWidget {
   }
 }
 
+/// How many groups you may *create* depends on what you've paid for; being
+/// a member of someone else's group never counts against you. With
+/// monetization switched off this always opens the create screen, which is
+/// what it has always done.
+Future<void> _newGroup(BuildContext context, List<LandGroup> groups, String uid) async {
+  final mine = groups.where((g) => g.createdBy == uid).toList();
+  final check = EntitlementService.createGroup(
+    createdGroupCount: mine.length,
+    hasProGroup: mine.any((g) => g.isPro),
+  );
+  if (check.blocked && mine.isNotEmpty) {
+    // The upgrade attaches to a group, so offer the one they already run.
+    await showUpgradePrompt(context, group: mine.first, reasonKey: check.reasonKey!);
+    return;
+  }
+  if (!context.mounted) return;
+  await Navigator.of(context).push(
+    MaterialPageRoute(builder: (_) => const CreateGroupScreen()),
+  );
+}
+
 class _NewGroupLink extends StatelessWidget {
-  const _NewGroupLink();
+  final List<LandGroup> groups;
+  final String uid;
+  const _NewGroupLink({required this.groups, required this.uid});
 
   @override
   Widget build(BuildContext context) {
@@ -191,9 +214,7 @@ class _NewGroupLink extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(
         child: TextButton.icon(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const CreateGroupScreen()),
-          ),
+          onPressed: () => _newGroup(context, groups, uid),
           icon: const Icon(Icons.add, size: 18, color: AppColors.mutedText),
           label: Text(S.t(context, 'new_group'), style: const TextStyle(color: AppColors.mutedText)),
         ),

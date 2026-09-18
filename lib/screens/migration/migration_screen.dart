@@ -10,6 +10,7 @@ import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/builder_payment_service.dart';
 import '../../services/contribution_service.dart';
+import '../../services/entitlement_service.dart';
 import '../../services/group_service.dart';
 import '../../services/migration_service.dart';
 import '../../services/user_directory.dart';
@@ -18,6 +19,7 @@ import '../../utils/byte_share.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/group_type_labels.dart';
 import '../../widgets/kistify_app_bar.dart';
+import '../billing/upgrade_screen.dart';
 
 /// Brings a group's pre-app history in from a spreadsheet.
 ///
@@ -80,6 +82,15 @@ class _MigrationScreenState extends State<MigrationScreen> {
   }
 
   Future<void> _pickAndParse() async {
+    // Bulk import is a paid feature. Check before the file picker rather
+    // than after parsing — being told "no" having already filled in a
+    // sheet would be the worst possible moment. With monetization off this
+    // always passes. Downloading the template stays free either way.
+    final check = EntitlementService.import(widget.group);
+    if (check.blocked) {
+      await showUpgradePrompt(context, group: widget.group, reasonKey: check.reasonKey!);
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
