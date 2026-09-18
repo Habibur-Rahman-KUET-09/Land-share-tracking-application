@@ -191,7 +191,19 @@ service cloud.firestore {
             isGroupApprover(groupId) &&
             request.resource.data.submittedBy == request.auth.uid &&
             request.resource.data.approvedBy == request.auth.uid &&
-            request.resource.data.status == 'approved')
+            request.resource.data.status == 'approved') ||
+          // Third branch — migrating a group's pre-app history from a
+          // spreadsheet. These arrive approved because they are history
+          // being recorded rather than claims awaiting review, so they are
+          // restricted to a Creator/Admin and must carry importedAt: that
+          // field is what lets the ledger tell a receipt-checked approval
+          // from a bulk one, and requiring it here means an ordinary entry
+          // can never be smuggled in through this branch.
+          (isGroupCanceller(groupId) &&
+            request.resource.data.submittedBy == request.auth.uid &&
+            request.resource.data.approvedBy == request.auth.uid &&
+            request.resource.data.status == 'approved' &&
+            request.resource.data.importedAt != null)
         );
         allow update: if isGroupMember(groupId) && (
           // Approve/reject: an Admin/Collector/Creator who is NOT the

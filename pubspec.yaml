@@ -54,6 +54,9 @@ dependencies:
   # Receipt photo upload (camera/gallery)
   image_picker: ^1.1.2
 
+  # Picking the .xlsx for data migration — works on mobile and web.
+  file_picker: ">=8.0.0 <11.0.0"
+
   # XFile — one picked-image type that works on mobile and web alike
   # (a web pick has no filesystem path, so dart:io File can't be used).
   cross_file: ^0.3.4+2

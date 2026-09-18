@@ -170,6 +170,21 @@ class S {
       'too_many_attempts': 'অনেকবার ভুল চেষ্টা হয়েছে। এক মিনিট অপেক্ষা করে আবার চেষ্টা করুন।',
       'sign_in_failed': 'ইমেইল বা পাসওয়ার্ড ঠিক নেই।',
       'enter_email_first': 'আগে আপনার ইমেইল ঠিকানাটি লিখুন।',
+      'data_migration': 'পুরোনো হিসাব আমদানি',
+      'migration_intro': 'অ্যাপ ব্যবহার শুরুর আগের হিসাব Excel থেকে একবারে তুলে আনতে পারেন। আগে নমুনা ফাইলটি নামিয়ে দেখুন কোন ঘরে কী বসাতে হয় — আপনার সদস্যদের নাম আগে থেকেই বসানো থাকবে।',
+      'migration_step_download': 'নমুনা ফাইল নামান',
+      'migration_step_fill': 'ফাইলটি পূরণ করুন',
+      'migration_step_upload': 'ফাইলটি আপলোড করুন',
+      'migration_template': 'নমুনা ফরম্যাট (.xlsx)',
+      'migration_pick_file': 'Excel ফাইল বাছুন',
+      'migration_columns': 'সদস্য — নাম হুবহু অ্যাপে যেভাবে আছে\nমাস — ১ থেকে ১২\nবছর — যেমন ২০২৫\nপরিমাণ — শুধু সংখ্যা\nপদ্ধতি — নগদ / বিকাশ / ব্যাংক / অন্যান্য\nনোট — ঐচ্ছিক',
+      'migration_preview': 'আমদানির আগে দেখে নিন',
+      'migration_will_import': 'যোগ হবে',
+      'migration_duplicates': 'আগে থেকেই আছে (বাদ যাবে)',
+      'migration_errors': 'সমস্যা আছে (বাদ যাবে)',
+      'migration_row': 'সারি',
+      'migration_confirm': 'আমদানি নিশ্চিত করুন',
+      'migration_done': 'টি এন্ট্রি যোগ হয়েছে',
       'needs_second_approver':
           'নিজের কিস্তির এন্ট্রি দেওয়ার আগে আরেকজন Admin বা Collector যোগ করুন — '
               'নিজের এন্ট্রি নিজে অনুমোদন করা যায় না, তাই এখন এন্ট্রি দিলে সেটি চিরকাল '
@@ -336,6 +351,21 @@ class S {
       'too_many_attempts': 'Too many failed attempts. Wait a minute and try again.',
       'sign_in_failed': 'That email or password is not right.',
       'enter_email_first': 'Enter your email address first.',
+      'data_migration': 'Import past records',
+      'migration_intro': 'Bring in the history you kept before the app, in one go. Download the sample first to see which column is which — your own members are already filled in.',
+      'migration_step_download': 'Download the sample',
+      'migration_step_fill': 'Fill it in',
+      'migration_step_upload': 'Upload the file',
+      'migration_template': 'Sample format (.xlsx)',
+      'migration_pick_file': 'Choose Excel file',
+      'migration_columns': 'Member — the name exactly as it appears in the app\nMonth — 1 to 12\nYear — e.g. 2025\nAmount — numbers only\nMethod — Cash / bKash / Bank / Other\nNote — optional',
+      'migration_preview': 'Check before importing',
+      'migration_will_import': 'Will be added',
+      'migration_duplicates': 'Already there (skipped)',
+      'migration_errors': 'Has problems (skipped)',
+      'migration_row': 'Row',
+      'migration_confirm': 'Confirm import',
+      'migration_done': 'entries added',
       'needs_second_approver':
           'Add another Admin or Collector before recording your own instalment — '
               'nobody can approve their own entry, so one filed now would sit pending '

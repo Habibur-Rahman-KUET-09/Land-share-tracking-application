@@ -59,6 +59,15 @@ class Contribution {
   final DateTime? cancelledAt;
   final String? cancelReason;
 
+  /// Set only on entries brought in from a spreadsheet during migration,
+  /// never on ones a member actually submitted in the app.
+  ///
+  /// These are approved on arrival — they are history being recorded, not a
+  /// claim awaiting review — so the ledger must be able to say which
+  /// approvals came from a human checking a receipt and which came from a
+  /// bulk import. Security rules key off this field too.
+  final DateTime? importedAt;
+
   const Contribution({
     required this.id,
     required this.groupId,
@@ -77,6 +86,7 @@ class Contribution {
     this.cancelledBy,
     this.cancelledAt,
     this.cancelReason,
+    this.importedAt,
   });
 
   /// FR 7 "Late Payment Tracking" — approved after the group's due date for
@@ -104,6 +114,7 @@ class Contribution {
       'cancelledBy': cancelledBy,
       'cancelledAt': cancelledAt == null ? null : Timestamp.fromDate(cancelledAt!),
       'cancelReason': cancelReason,
+      'importedAt': importedAt == null ? null : Timestamp.fromDate(importedAt!),
     };
   }
 
@@ -126,6 +137,7 @@ class Contribution {
       cancelledBy: map['cancelledBy'] as String?,
       cancelledAt: (map['cancelledAt'] as Timestamp?)?.toDate(),
       cancelReason: map['cancelReason'] as String?,
+      importedAt: (map['importedAt'] as Timestamp?)?.toDate(),
     );
   }
 }

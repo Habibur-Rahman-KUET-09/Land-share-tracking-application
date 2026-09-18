@@ -10,6 +10,7 @@ import '../../utils/group_type_labels.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/kistify_app_bar.dart';
 import '../home/group_list_screen.dart';
+import '../migration/migration_screen.dart';
 import 'edit_plan_screen.dart';
 
 /// Creator-only hub: edit the group name/plan, or delete the group
@@ -178,6 +179,25 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
               subtitle: Text(
                 S.t(context, 'single_manager_desc'),
                 style: const TextStyle(fontSize: 12.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Color(0x1A0F6E5C),
+                foregroundColor: AppColors.primary,
+                child: Icon(Icons.upload_file_outlined),
+              ),
+              title: Text(S.t(context, 'data_migration')),
+              subtitle: Text(
+                S.t(context, 'migration_template'),
+                style: const TextStyle(fontSize: 12.5),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => MigrationScreen(group: widget.group)),
               ),
             ),
           ),
