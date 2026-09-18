@@ -1,4 +1,4 @@
-package com.landshare.land_installment_tracker
+package com.veryfew.kistify
 
 import io.flutter.embedding.android.FlutterActivity
 

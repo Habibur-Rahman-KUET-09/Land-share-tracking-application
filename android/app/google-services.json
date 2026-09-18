@@ -12,7 +12,20 @@
           "package_name": "com.landshare.land_installment_tracker"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "510783432326-t7lphrca251ne08fiu0n8thvhe86rie8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.landshare.land_installment_tracker",
+            "certificate_hash": "11f5bfcfb292321112ceb2baf4908420afdaee97"
+          }
+        },
+        {
+          "client_id": "510783432326-809clovdtb0qm4hqr4snsh6knqc35jav.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDks9FxaKAinOy-5xFkrQkEixvVw9mPlu4"
@@ -20,7 +33,41 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "510783432326-809clovdtb0qm4hqr4snsh6knqc35jav.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510783432326:android:2dbff415e253df402e5307",
+        "android_client_info": {
+          "package_name": "com.veryfew.kistify"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "510783432326-809clovdtb0qm4hqr4snsh6knqc35jav.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDks9FxaKAinOy-5xFkrQkEixvVw9mPlu4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "510783432326-809clovdtb0qm4hqr4snsh6knqc35jav.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

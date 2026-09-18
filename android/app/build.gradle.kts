@@ -18,7 +18,7 @@ val keystoreProperties = Properties().apply {
 val hasUploadKey = keystoreProperties.getProperty("storeFile") != null
 
 android {
-    namespace = "com.landshare.land_installment_tracker"
+    namespace = "com.veryfew.kistify"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -28,8 +28,9 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.landshare.land_installment_tracker"
+        // Permanent once the app is published: Play keys a listing to its
+        // application ID and it can never be changed afterwards.
+        applicationId = "com.veryfew.kistify"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Firebase Auth (phone verification) requires API 23+.
