@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/password_policy.dart';
 import '../../widgets/kistify_app_bar.dart';
+import '../help/help_screen.dart';
 
 /// Everything about *you* rather than about a group: who you're signed in
 /// as, your password, the app's language, the help pages, and the way out.
@@ -88,6 +89,21 @@ class AccountScreen extends StatelessWidget {
               subtitle: Text(context.watch<LocaleProvider>().isBangla ? 'বাংলা' : 'English'),
               trailing: const Icon(Icons.swap_horiz),
               onTap: () => context.read<LocaleProvider>().toggle(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Color(0x1A0F6E5C),
+                foregroundColor: AppColors.primary,
+                child: Icon(Icons.help_outline),
+              ),
+              title: Text(S.t(context, 'how_it_works')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const HelpScreen()),
+              ),
             ),
           ),
           const SizedBox(height: 24),

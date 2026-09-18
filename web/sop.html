@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kistify — SOP / কার্যপদ্ধতি</title>
+  <meta name="theme-color" content="#0F6E5C">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    :root { --teal:#0F6E5C; --navy:#1B2A4A; --body:#333; --muted:#666; --line:#E3E6E5; --amber:#8A5300; --amberbg:#FFF3E0; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--body); line-height:1.75; background:#F4F6F5; }
+    header { background:var(--teal); color:#fff; padding:32px 20px; }
+    header div { max-width:820px; margin:0 auto; }
+    header h1 { margin:0 0 4px; font-size:22px; }
+    header p { margin:0; opacity:.85; font-size:14px; }
+    nav { max-width:820px; margin:20px auto 0; padding:0 20px; }
+    nav ol { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 20px 14px 38px; margin:0; }
+    nav li { margin:3px 0; }
+    nav a { color:var(--teal); text-decoration:none; }
+    nav a:hover { text-decoration:underline; }
+    main { max-width:820px; margin:0 auto; padding:20px 20px 64px; }
+    section { background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-top:16px; }
+    h2 { color:var(--navy); font-size:18px; margin:0 0 12px; }
+    h3 { color:var(--teal); font-size:14.5px; margin:20px 0 6px; }
+    table { width:100%; border-collapse:collapse; margin:10px 0; font-size:14px; }
+    th,td { border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+    th { background:#F4F6F5; color:var(--navy); }
+    ul,ol { padding-left:22px; }
+    li { margin-bottom:7px; }
+    .note { background:var(--amberbg); border-radius:10px; padding:12px 14px; margin:14px 0; font-size:14px; color:var(--amber); }
+    .en { color:var(--muted); font-size:14px; }
+    code { background:#F0F2F1; padding:1px 5px; border-radius:4px; font-size:13px; }
+    footer { text-align:center; font-size:13px; color:var(--muted); padding:28px 20px 48px; }
+    a { color:var(--teal); }
+    @media (max-width:520px){ section{padding:16px;} table{font-size:13px;} th,td{padding:6px 7px;} }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Kistify — কার্যপদ্ধতি (SOP)</h1>
+    <p>Standard Operating Procedure · সংস্করণ ১.০</p>
+  </div>
+</header>
+
+<nav>
+  <ol>
+    <li><a href="#start">গ্রুপ চালু করা</a></li>
+    <li><a href="#roles">ভূমিকা ও অনুমতি</a></li>
+    <li><a href="#monthly">প্রতি মাসের কাজ</a></li>
+    <li><a href="#approval">অনুমোদনের নিয়ম</a></li>
+    <li><a href="#types">তিন ধরনের গ্রুপ</a></li>
+    <li><a href="#migration">পুরোনো হিসাব আনা</a></li>
+    <li><a href="#reports">রিপোর্ট</a></li>
+    <li><a href="#problems">সমস্যা হলে</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section id="start">
+  <h2>১. গ্রুপ চালু করা</h2>
+  <ol>
+    <li><strong>অ্যাকাউন্ট খুলুন</strong> — ইমেইল/পাসওয়ার্ড অথবা Google দিয়ে।</li>
+    <li><strong>গ্রুপ তৈরি করুন</strong> — ধরন বেছে নিন, নাম দিন, মাসিক পরিমাণ ও কিস্তির তারিখ ঠিক করুন।</li>
+    <li><strong>সদস্য যোগ করুন</strong> — সদস্য ট্যাব → সদস্য যোগ করুন → ইমেইল দিয়ে খুঁজুন। যাকে যোগ করবেন তার আগে থেকে Kistify-তে অ্যাকাউন্ট থাকতে হবে।</li>
+    <li><strong>অন্তত একজনকে Admin বা Collector বানান।</strong></li>
+  </ol>
+  <div class="note">
+    <strong>জরুরি:</strong> দ্বিতীয় একজন অনুমোদনকারী যোগ না করা পর্যন্ত Creator নিজের কিস্তির এন্ট্রি দিতে পারবেন না — কারণ নিজের এন্ট্রি নিজে অনুমোদন করা যায় না, ফলে ওটা চিরকাল আটকে থাকত। একা চালাতে চাইলে <em>"আমি একাই ম্যানেজ করব"</em> চালু করুন।
+  </div>
+</section>
+
+<section id="roles">
+  <h2>২. ভূমিকা ও অনুমতি</h2>
+  <table>
+    <tr><th>কাজ</th><th>Creator</th><th>Admin</th><th>Collector</th><th>Member</th></tr>
+    <tr><td>নিজের কিস্তির এন্ট্রি</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+    <tr><td>এন্ট্রি অনুমোদন / প্রত্যাখ্যান</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+    <tr><td>অনুমোদিত এন্ট্রি বাতিল</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+    <tr><td>বিল্ডার / ব্যাংকে জমার এন্ট্রি</td><td>✅</td><td>❌</td><td>✅</td><td>❌</td></tr>
+    <tr><td>লটারির ড্র</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+    <tr><td>রিপোর্ট ও অ্যাক্টিভিটি লগ</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+    <tr><td>সদস্য যোগ / বাদ, ভূমিকা বদল</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+    <tr><td>পরিকল্পনা বদল, নাম বদল, আমদানি</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+    <tr><td>গ্রুপ মুছে ফেলা</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+  </table>
+  <h3>যে নিয়মগুলো কেউ ভাঙতে পারে না</h3>
+  <ul>
+    <li>একটি গ্রুপে <strong>একজনই Creator</strong> — কাউকে Creator বানানো যায় না।</li>
+    <li><strong>কেউ নিজের ভূমিকা নিজে বদলাতে পারে না</strong>, Creator নিজেও না।</li>
+    <li>Creator-কে গ্রুপ থেকে বের করা যায় না — পুরো গ্রুপ মুছতে হয়।</li>
+    <li>এগুলো শুধু অ্যাপের বোতাম লুকিয়ে নয়, <strong>সার্ভারের নিরাপত্তা নিয়মেও</strong> আটকানো।</li>
+  </ul>
+</section>
+
+<section id="monthly">
+  <h2>৩. প্রতি মাসের কাজ</h2>
+  <table>
+    <tr><th>কখন</th><th>কে</th><th>কী</th></tr>
+    <tr><td>কিস্তির তারিখের ৩ দিন আগে</td><td>সবাই</td><td>যারা দেননি তারা রিমাইন্ডার পাবেন</td></tr>
+    <tr><td>টাকা দেওয়ার পর</td><td>সদস্য</td><td>কিস্তি এন্ট্রি ট্যাব → পেমেন্ট এন্ট্রি দিন (রিসিটের ছবি ঐচ্ছিক)</td></tr>
+    <tr><td>এন্ট্রির পর</td><td>Admin / Collector</td><td>অনুমোদনের অপেক্ষায় থাকা এন্ট্রি দেখে অনুমোদন বা প্রত্যাখ্যান</td></tr>
+    <tr><td>তারিখের ২ দিন আগে</td><td>Creator / Collector</td><td>বিল্ডার বা ব্যাংকে জমা দেওয়ার রিমাইন্ডার</td></tr>
+    <tr><td>জমা দেওয়ার পর</td><td>Creator / Collector</td><td>বিল্ডার পেমেন্ট ট্যাবে এন্ট্রি দিন</td></tr>
+    <tr><td>তারিখের ১ দিন পর</td><td>Creator / Admin</td><td>কে কে দেননি তার তালিকা নোটিফিকেশনে আসবে</td></tr>
+    <tr><td>মাসের যেকোনো সময়</td><td>Admin</td><td>(লটারি গ্রুপে) ড্র করুন</td></tr>
+  </table>
+</section>
+
+<section id="approval">
+  <h2>৪. অনুমোদনের নিয়ম</h2>
+  <p>প্রতিটি এন্ট্রি তিনটি অবস্থার একটিতে থাকে: <strong>অনুমোদনের অপেক্ষায় → অনুমোদিত</strong> অথবা <strong>প্রত্যাখ্যাত</strong>। শুধু <em>অনুমোদিত</em> এন্ট্রি হিসাবে গোনা হয়।</p>
+  <ul>
+    <li><strong>নিজের এন্ট্রি নিজে অনুমোদন করা যায় না</strong> — যিনি এন্ট্রি দিয়েছেন বা যার নামে এন্ট্রি, কেউই না। অন্য একজন Admin/Collector লাগবেই।</li>
+    <li><strong>প্রত্যাখ্যান করতে কারণ লিখতে হয়</strong> — কারণ ছাড়া প্রত্যাখ্যান করা যায় না।</li>
+    <li><strong>ভুলে অনুমোদন হয়ে গেলে</strong> Admin সেটি কারণসহ বাতিল করতে পারেন। এন্ট্রি মুছে যায় না — "বাতিল" হিসেবে রেকর্ডে থেকে যায়।</li>
+    <li>এই সব কিছু <strong>অ্যাক্টিভিটি লগে</strong> লেখা থাকে এবং কেউ মুছতে পারে না।</li>
+  </ul>
+  <h3>"আমি একাই ম্যানেজ করব" মোড</h3>
+  <p>ছোট গ্রুপে যেখানে একজনই সব লিখে রাখেন, সেখানে অনুমোদনের ধাপটা অর্থহীন। Group Management থেকে এই মোড চালু করলে এন্ট্রি সাথে সাথেই অনুমোদিত হয় এবং ম্যানেজার সবার হয়ে এন্ট্রি দিতে পারেন। <strong>তখন দুই-জনের যাচাই থাকে না</strong> — এটা জেনেই চালু করবেন।</p>
+</section>
+
+<section id="types">
+  <h2>৫. তিন ধরনের গ্রুপ</h2>
+  <h3>কিস্তি কালেকশন</h3>
+  <p>মাসিক কিস্তি তুলে বিল্ডার বা বিক্রেতাকে দেওয়া হয়। জমির লোকেশন, মোট মূল্য, কিস্তির সংখ্যা — সবই থাকে। "বিল্ডার পেমেন্ট" ট্যাবে বাইরে কত গেল তার হিসাব।</p>
+  <h3>সঞ্চয়</h3>
+  <p>টাকা কোথাও যায় না, গ্রুপ ফান্ড হিসেবে জমতে থাকে। "বিল্ডার পেমেন্ট" ট্যাবটি এখানে <strong>"ব্যাংকে জমা"</strong> হয়ে যায়। সঞ্চয়ের লক্ষ্য দেওয়া ঐচ্ছিক।</p>
+  <h3>লটারি / সমিতি</h3>
+  <ul>
+    <li>প্রতি মাসে সবাই নিজের অংশ জমা দেন; লটারিতে একজন পুরো পট পান।</li>
+    <li>এটি <strong>সুদমুক্ত ঋণ</strong> — বিজয়ী বাকি মাসগুলোতেও নিজের অংশ দিয়ে যান, সেটাই শোধ।</li>
+    <li><strong>যিনি একবার জিতেছেন তিনি পরের ড্র থেকে বাদ</strong> — সবাই একবার করে পান, তারপর চক্র শেষ।</li>
+    <li>ড্র দুইভাবে: অ্যাপ নিজে র‍্যান্ডম করবে, অথবা সামনাসামনি ড্র হলে Admin বিজয়ীর নাম লিখবেন। কোনটা হয়েছে তা রেকর্ডে থাকে।</li>
+    <li><strong>ফলাফল কখনো সম্পাদনা করা যায় না।</strong> ভুল হলে Creator সেটি মুছে আবার ড্র করবেন।</li>
+  </ul>
+</section>
+
+<section id="migration">
+  <h2>৬. পুরোনো হিসাব আনা</h2>
+  <ol>
+    <li>Group Management → <strong>পুরোনো হিসাব আমদানি</strong></li>
+    <li><strong>নমুনা ফাইল নামান</strong> — আপনার সদস্যদের নাম আগে থেকেই বসানো থাকবে</li>
+    <li>ঘরগুলো পূরণ করুন: <code>সদস্য</code> · <code>মাস (১-১২)</code> · <code>বছর</code> · <code>পরিমাণ</code> · <code>পদ্ধতি</code> · <code>নোট</code></li>
+    <li>ফাইলটি আপলোড করুন — <strong>সাথে সাথে কিছু লেখা হবে না</strong></li>
+    <li>প্রিভিউ দেখুন: কতগুলো যোগ হবে, কতগুলো আগে থেকেই আছে, কোন সারিতে ভুল</li>
+    <li>ঠিক থাকলে <strong>আমদানি নিশ্চিত করুন</strong></li>
+  </ol>
+  <div class="note">
+    সদস্যের নাম <strong>হুবহু অ্যাপে যেভাবে আছে</strong> সেভাবে লিখতে হবে। নাম না মিললে ওই সারিটা বাদ যাবে এবং প্রিভিউতে দেখাবে। একই ফাইল দুবার আপলোড করলে হিসাব দ্বিগুণ হবে না।
+  </div>
+</section>
+
+<section id="reports">
+  <h2>৭. রিপোর্ট</h2>
+  <ul>
+    <li><strong>সাধারণ রিপোর্ট</strong> — প্রতি সদস্যের মোট পরিশোধ ও বাকি, সাথে বিল্ডার পেমেন্ট লেজার।</li>
+    <li><strong>মাসভিত্তিক ম্যাট্রিক্স</strong> — এক সারিতে এক মাস, এক কলামে এক সদস্য; ডানদিকে মোট ও রেফারেন্স।</li>
+    <li>দুটোই <strong>PDF ও Excel</strong> দুই ফরম্যাটে নামানো যায় (Admin/Creator)।</li>
+    <li>অ্যাক্টিভিটি লগ, কিস্তি এন্ট্রি ও বিল্ডার পেমেন্টে <strong>তারিখ ধরে খোঁজা</strong> যায়।</li>
+  </ul>
+</section>
+
+<section id="problems">
+  <h2>৮. সমস্যা হলে</h2>
+  <table>
+    <tr><th>যা দেখছেন</th><th>কারণ ও করণীয়</th></tr>
+    <tr><td>এন্ট্রি দেওয়ার বোতাম নেই, হলুদ নোটিশ দেখাচ্ছে</td><td>আপনি গ্রুপের একমাত্র অনুমোদনকারী। আরেকজন Admin/Collector যোগ করুন, অথবা "আমি একাই ম্যানেজ করব" চালু করুন।</td></tr>
+    <tr><td>এন্ট্রি অনুমোদনের অপেক্ষায় পড়ে আছে</td><td>অন্য একজন Admin/Collector-কে অনুমোদন করতে বলুন — নিজেরটা নিজে করা যাবে না।</td></tr>
+    <tr><td>"permission-denied" লেখা আসছে</td><td>Firebase Console-এ নিরাপত্তা নিয়ম (Firestore Rules) সর্বশেষ সংস্করণে publish করা আছে কিনা দেখুন।</td></tr>
+    <tr><td>সদস্য খুঁজে পাওয়া যাচ্ছে না</td><td>তাকে আগে Kistify-তে অ্যাকাউন্ট খুলতে বলুন, তারপর সেই ইমেইল দিয়ে খুঁজুন।</td></tr>
+    <tr><td>নাম ভুল দেখাচ্ছে</td><td>Admin/Creator সদস্য ট্যাবে ⋮ মেনু থেকে নাম ঠিক করে দিতে পারেন।</td></tr>
+    <tr><td>কিছু ট্যাব দেখা যাচ্ছে না</td><td>ওই ট্যাবে আপনার ভূমিকার অনুমতি নেই — উপরের টেবিলটি দেখুন।</td></tr>
+  </table>
+</section>
+
+<footer>
+  Kistify · <a href="/">অ্যাপ</a> · <a href="/privacy">প্রাইভেসি পলিসি</a>
+</footer>
+</main>
+</body>
+</html>

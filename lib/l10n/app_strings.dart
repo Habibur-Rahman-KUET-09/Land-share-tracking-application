@@ -170,6 +170,12 @@ class S {
       'too_many_attempts': 'অনেকবার ভুল চেষ্টা হয়েছে। এক মিনিট অপেক্ষা করে আবার চেষ্টা করুন।',
       'sign_in_failed': 'ইমেইল বা পাসওয়ার্ড ঠিক নেই।',
       'enter_email_first': 'আগে আপনার ইমেইল ঠিকানাটি লিখুন।',
+      'how_it_works': 'কীভাবে কাজ করে',
+      'welcome_title': 'Kistify তে স্বাগতম',
+      'welcome_steps': 'শুরু করতে তিনটি ধাপ:\n\n'
+          '১. একটি গ্রুপ তৈরি করুন\n'
+          '২. বন্ধুদের সদস্য হিসেবে যোগ করুন\n'
+          '৩. প্রতি মাসে কিস্তির এন্ট্রি দিন',
       'data_migration': 'পুরোনো হিসাব আমদানি',
       'migration_intro': 'অ্যাপ ব্যবহার শুরুর আগের হিসাব Excel থেকে একবারে তুলে আনতে পারেন। আগে নমুনা ফাইলটি নামিয়ে দেখুন কোন ঘরে কী বসাতে হয় — আপনার সদস্যদের নাম আগে থেকেই বসানো থাকবে।',
       'migration_step_download': 'নমুনা ফাইল নামান',
@@ -351,6 +357,12 @@ class S {
       'too_many_attempts': 'Too many failed attempts. Wait a minute and try again.',
       'sign_in_failed': 'That email or password is not right.',
       'enter_email_first': 'Enter your email address first.',
+      'how_it_works': 'How it works',
+      'welcome_title': 'Welcome to Kistify',
+      'welcome_steps': 'Three steps to get going:\n\n'
+          '1. Create a group\n'
+          '2. Add your friends as members\n'
+          '3. Record each month\'s instalment',
       'data_migration': 'Import past records',
       'migration_intro': 'Bring in the history you kept before the app, in one go. Download the sample first to see which column is which — your own members are already filled in.',
       'migration_step_download': 'Download the sample',

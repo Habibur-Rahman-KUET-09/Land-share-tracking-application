@@ -14,6 +14,7 @@ import '../../widgets/kistify_mark.dart';
 import '../account/account_screen.dart';
 import '../group/create_group_screen.dart';
 import '../group/group_detail_screen.dart';
+import '../help/help_screen.dart';
 import '../notifications/notifications_screen.dart';
 
 /// Screen 1 (Home): FR 2.1 "একাধিক group সাপোর্ট" — every group the signed-in
@@ -91,10 +92,45 @@ class GroupListScreen extends StatelessWidget {
           }
           final groups = snapshot.data ?? [];
           if (groups.isEmpty) {
-            return Column(
+            // A brand-new user landing on a blank list has no idea what
+            // this app expects of them. Say it in order, and offer the
+            // guide rather than assuming they'll go looking for it.
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 32, 20, 20),
               children: [
-                Expanded(child: EmptyState(icon: Icons.landscape_outlined, message: S.t(context, 'no_groups'))),
-                const _NewGroupLink(),
+                const Icon(Icons.groups_outlined, size: 56, color: AppColors.primary),
+                const SizedBox(height: 16),
+                Text(
+                  S.t(context, 'welcome_title'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.heading,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  S.t(context, 'welcome_steps'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13.5, height: 1.8, color: AppColors.bodyText),
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CreateGroupScreen()),
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: Text(S.t(context, 'new_group')),
+                ),
+                const SizedBox(height: 4),
+                TextButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const HelpScreen()),
+                  ),
+                  icon: const Icon(Icons.help_outline, size: 18),
+                  label: Text(S.t(context, 'how_it_works')),
+                ),
               ],
             );
           }
