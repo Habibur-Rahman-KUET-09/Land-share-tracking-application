@@ -129,9 +129,13 @@ class AccountScreen extends StatelessWidget {
                 S.t(context, 'logout'),
                 style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold),
               ),
+              // The provider is read *before* popping: reading it off a
+              // context whose element has just been removed is asking for a
+              // "looking up a deactivated widget's ancestor" crash.
               onTap: () {
+                final auth = context.read<AppAuthProvider>();
                 Navigator.of(context).pop();
-                context.read<AppAuthProvider>().signOut();
+                auth.signOut();
               },
             ),
           ),

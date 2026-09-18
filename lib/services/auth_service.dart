@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/app_user.dart';
@@ -176,8 +176,27 @@ class AuthService {
   // ---------------------------------------------------------------------
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    // Firebase first, and on its own line: it is the sign-out that actually
+    // ends the session, and everything else here is cleanup around it.
+    //
+    // The Google plugin used to be awaited *before* this, which quietly
+    // broke sign-out on the web entirely — there the user signs in through
+    // signInWithPopup and the plugin is never initialised, so its signOut()
+    // throws and took the real sign-out down with it. Nothing happened when
+    // you tapped Logout.
     await _auth.signOut();
+
+    // Best-effort: clears the cached Google account on mobile so the next
+    // sign-in shows the account picker instead of silently reusing the last
+    // one. Irrelevant on the web, and never worth failing a sign-out over.
+    if (!kIsWeb) {
+      try {
+        await _googleSignIn.signOut();
+      } catch (e) {
+        debugPrint('Google sign-out skipped: $e');
+      }
+    }
+
     // Cached names are per-session by design: whoever signs in next must
     // not see anything resolved under the previous account's access.
     UserDirectory.instance.clear();
