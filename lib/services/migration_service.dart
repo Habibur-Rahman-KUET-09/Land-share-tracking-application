@@ -3,9 +3,19 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:excel/excel.dart';
 
+import '../models/builder_payment.dart';
 import '../models/contribution.dart';
 import '../models/group_member.dart';
+import '../models/land_group.dart';
 import 'audit_service.dart';
+
+/// Which side of the ledger a spreadsheet row belongs to.
+///
+/// A group's history is money in (members' instalments) and money out (what
+/// was remitted to the builder, or deposited to the bank in a savings
+/// group). Both live in the same file so a group migrates once, from one
+/// sheet, instead of juggling two.
+enum MigrationKind { contribution, payment }
 
 /// One row of a migration spreadsheet, after parsing.
 ///
@@ -15,43 +25,56 @@ import 'audit_service.dart';
 /// message.
 class MigrationRow {
   final int rowNumber;
+  final MigrationKind kind;
   final String rawMember;
   final String? memberUid;
   final int? month;
   final int? year;
+  final int day;
   final double? amount;
   final PaymentMethod method;
-  final String? note;
+  final String? reference;
   final String? error;
 
-  /// True when an entry for this member/month/year/amount already exists —
-  /// re-importing the same file must not double the ledger.
+  /// True when a matching record already exists — re-importing the same
+  /// file must not double the ledger.
   final bool duplicate;
 
   const MigrationRow({
     required this.rowNumber,
+    required this.kind,
     required this.rawMember,
     this.memberUid,
     this.month,
     this.year,
+    this.day = 1,
     this.amount,
     this.method = PaymentMethod.cash,
-    this.note,
+    this.reference,
     this.error,
     this.duplicate = false,
   });
 
   bool get importable => error == null && !duplicate;
+
+  /// Payments are dated to the day; instalments are only ever "this month".
+  DateTime get date => DateTime(year!, month!, day);
 }
 
 class MigrationPreview {
   final List<MigrationRow> rows;
   const MigrationPreview(this.rows);
 
+  List<MigrationRow> _of(MigrationKind k) => rows.where((r) => r.kind == k && r.importable).toList();
+
+  List<MigrationRow> get contributions => _of(MigrationKind.contribution);
+  List<MigrationRow> get payments => _of(MigrationKind.payment);
   List<MigrationRow> get importable => rows.where((r) => r.importable).toList();
   List<MigrationRow> get failed => rows.where((r) => r.error != null).toList();
   List<MigrationRow> get duplicates => rows.where((r) => r.duplicate).toList();
-  double get total => importable.fold<double>(0, (t, r) => t + (r.amount ?? 0));
+
+  double get contributionTotal => contributions.fold<double>(0, (t, r) => t + (r.amount ?? 0));
+  double get paymentTotal => payments.fold<double>(0, (t, r) => t + (r.amount ?? 0));
 }
 
 /// Brings a group's existing history in from a spreadsheet.
@@ -66,17 +89,23 @@ class MigrationService {
       : _db = db ?? FirebaseFirestore.instance,
         _audit = audit ?? AuditService();
 
-  static const headers = ['সদস্য', 'মাস', 'বছর', 'পরিমাণ', 'পদ্ধতি', 'নোট'];
+  /// One layout for both kinds of row. Every row says which it is in column
+  /// A, so nothing depends on where it sits in the sheet.
+  static const headers = ['ধরন', 'সদস্য', 'মাস', 'বছর', 'দিন', 'পরিমাণ', 'পদ্ধতি', 'রেফারেন্স'];
+
+  static const contributionLabel = 'কিস্তি';
+  static const paymentLabel = 'জমা';
 
   /// A filled-in example rather than an empty grid: the fastest way to
-  /// explain a format is to show it with the group's own member names
-  /// already in column A, so there is nothing to guess about spelling.
+  /// explain a format is to show it, with the group's own member names
+  /// already in place and one row of each kind.
   static Uint8List buildTemplate({
+    required LandGroup group,
     required List<GroupMember> members,
     required Map<String, String> memberNames,
   }) {
     final excel = Excel.createExcel();
-    const sheetName = 'কিস্তি';
+    const sheetName = 'হিসাব';
     final sheet = excel[sheetName];
     for (final existing in excel.tables.keys.toList()) {
       if (existing != sheetName) excel.delete(existing);
@@ -87,11 +116,14 @@ class MigrationService {
 
     final now = DateTime.now();
     final active = members.where((m) => m.isActive).toList();
+
     for (final m in active.take(3)) {
       sheet.appendRow([
+        TextCellValue(contributionLabel),
         TextCellValue(memberNames[m.uid] ?? m.uid),
         IntCellValue(now.month),
         IntCellValue(now.year),
+        TextCellValue(''),
         DoubleCellValue(m.monthlyAmount == 0 ? 5000 : m.monthlyAmount),
         TextCellValue('নগদ'),
         TextCellValue(''),
@@ -99,14 +131,29 @@ class MigrationService {
     }
     if (active.isEmpty) {
       sheet.appendRow([
-        TextCellValue('সদস্যের নাম বা ইমেইল'),
+        TextCellValue(contributionLabel),
+        TextCellValue('সদস্যের নাম'),
         IntCellValue(now.month),
         IntCellValue(now.year),
+        TextCellValue(''),
         DoubleCellValue(5000),
         TextCellValue('নগদ'),
         TextCellValue(''),
       ]);
     }
+
+    // The outgoing side, shown with a day and a reference so it is obvious
+    // those two columns belong to this kind of row.
+    sheet.appendRow([
+      TextCellValue(paymentLabel),
+      TextCellValue(''),
+      IntCellValue(now.month),
+      IntCellValue(now.year),
+      IntCellValue(10),
+      DoubleCellValue(group.monthlyTotalToBuilder == 0 ? 15000 : group.monthlyTotalToBuilder),
+      TextCellValue('ব্যাংক'),
+      TextCellValue('রসিদ নম্বর'),
+    ]);
 
     return Uint8List.fromList(excel.save()!);
   }
@@ -118,14 +165,15 @@ class MigrationService {
     required Uint8List bytes,
     required List<GroupMember> members,
     required Map<String, String> memberNames,
-    required List<Contribution> existing,
+    required List<Contribution> existingContributions,
+    required List<BuilderPayment> existingPayments,
   }) {
     final excel = Excel.decodeBytes(bytes);
     final sheet = excel.tables[excel.getDefaultSheet()] ?? excel.tables.values.first;
     final rows = <MigrationRow>[];
 
-    // Match on name or email, case- and space-insensitive, because whoever
-    // types the sheet will not match the app's stored casing exactly.
+    // Match on the name as typed, case- and space-insensitive, because
+    // whoever fills the sheet will not match the app's casing exactly.
     String norm(String v) => v.trim().toLowerCase();
     final byKey = <String, String>{};
     for (final m in members) {
@@ -140,58 +188,106 @@ class MigrationService {
         return cells[idx]?.value?.toString().trim() ?? '';
       }
 
-      final rawMember = cell(0);
+      final rawKind = cell(0);
+      final rawMember = cell(1);
+      final rawAmount = cell(5);
       // A trailing blank row is normal in a spreadsheet, not an error.
-      if (rawMember.isEmpty && cell(1).isEmpty && cell(3).isEmpty) continue;
+      if (rawKind.isEmpty && rawMember.isEmpty && rawAmount.isEmpty) continue;
 
       final rowNumber = i + 1;
-      final uid = byKey[norm(rawMember)];
-      if (uid == null) {
-        rows.add(MigrationRow(
-          rowNumber: rowNumber,
-          rawMember: rawMember,
-          error: 'এই নামে কোনো সদস্য নেই',
-        ));
-        continue;
-      }
+      final kind = _kindFrom(rawKind, hasMember: rawMember.isNotEmpty);
 
-      final month = int.tryParse(cell(1));
-      final year = int.tryParse(cell(2));
-      final amount = double.tryParse(cell(3).replaceAll(',', ''));
+      MigrationRow fail(String message) => MigrationRow(
+            rowNumber: rowNumber,
+            kind: kind,
+            rawMember: rawMember,
+            error: message,
+          );
+
+      final month = int.tryParse(cell(2));
+      final year = int.tryParse(cell(3));
+      final amount = double.tryParse(rawAmount.replaceAll(',', ''));
+
       if (month == null || month < 1 || month > 12) {
-        rows.add(MigrationRow(rowNumber: rowNumber, rawMember: rawMember, error: 'মাস ১-১২ এর মধ্যে দিন'));
+        rows.add(fail('মাস ১-১২ এর মধ্যে দিন'));
         continue;
       }
       if (year == null || year < 2000 || year > 2100) {
-        rows.add(MigrationRow(rowNumber: rowNumber, rawMember: rawMember, error: 'বছরটি সঠিক নয়'));
+        rows.add(fail('বছরটি সঠিক নয়'));
         continue;
       }
       if (amount == null || amount <= 0) {
-        rows.add(MigrationRow(rowNumber: rowNumber, rawMember: rawMember, error: 'পরিমাণ সঠিক নয়'));
+        rows.add(fail('পরিমাণ সঠিক নয়'));
         continue;
       }
 
-      final duplicate = existing.any((c) =>
-          c.memberId == uid &&
-          c.month == month &&
-          c.year == year &&
-          (c.amount - amount).abs() < 0.005 &&
-          c.status != ContributionStatus.cancelled);
+      final method = _methodFrom(cell(6));
+      final reference = cell(7).isEmpty ? null : cell(7);
 
-      rows.add(MigrationRow(
-        rowNumber: rowNumber,
-        rawMember: rawMember,
-        memberUid: uid,
-        month: month,
-        year: year,
-        amount: amount,
-        method: _methodFrom(cell(4)),
-        note: cell(5).isEmpty ? null : cell(5),
-        duplicate: duplicate,
-      ));
+      if (kind == MigrationKind.contribution) {
+        final uid = byKey[norm(rawMember)];
+        if (uid == null) {
+          rows.add(fail(rawMember.isEmpty ? 'সদস্যের নাম লিখুন' : 'এই নামে কোনো সদস্য নেই'));
+          continue;
+        }
+        final duplicate = existingContributions.any((c) =>
+            c.memberId == uid &&
+            c.month == month &&
+            c.year == year &&
+            (c.amount - amount).abs() < 0.005 &&
+            c.status != ContributionStatus.cancelled);
+        rows.add(MigrationRow(
+          rowNumber: rowNumber,
+          kind: kind,
+          rawMember: rawMember,
+          memberUid: uid,
+          month: month,
+          year: year,
+          amount: amount,
+          method: method,
+          reference: reference,
+          duplicate: duplicate,
+        ));
+      } else {
+        // Payments are dated to the day. A blank day is not an error — most
+        // old ledgers only recorded the month — so it falls back to the 1st.
+        final day = int.tryParse(cell(4)) ?? 1;
+        if (day < 1 || day > 31) {
+          rows.add(fail('দিন ১-৩১ এর মধ্যে দিন'));
+          continue;
+        }
+        final duplicate = existingPayments.any((p) =>
+            p.date.year == year &&
+            p.date.month == month &&
+            p.date.day == day &&
+            (p.amount - amount).abs() < 0.005);
+        rows.add(MigrationRow(
+          rowNumber: rowNumber,
+          kind: kind,
+          rawMember: rawMember,
+          month: month,
+          year: year,
+          day: day,
+          amount: amount,
+          method: method,
+          reference: reference,
+          duplicate: duplicate,
+        ));
+      }
     }
 
     return MigrationPreview(rows);
+  }
+
+  /// A blank type column is forgiving rather than fatal: a row with a member
+  /// named in it can only be an instalment, and one without can only be a
+  /// payment out.
+  static MigrationKind _kindFrom(String raw, {required bool hasMember}) {
+    final v = raw.trim().toLowerCase();
+    if (v.isEmpty) return hasMember ? MigrationKind.contribution : MigrationKind.payment;
+    const paymentWords = ['জমা', 'বিল্ডার', 'ব্যাংক', 'payment', 'deposit', 'builder', 'bank', 'out'];
+    if (paymentWords.any(v.contains)) return MigrationKind.payment;
+    return MigrationKind.contribution;
   }
 
   static PaymentMethod _methodFrom(String raw) {
@@ -203,30 +299,35 @@ class MigrationService {
     return PaymentMethod.other;
   }
 
-  /// Writes the importable rows as approved contributions.
+  /// Writes the importable rows: instalments as approved contributions,
+  /// outgoing rows into the builder/bank ledger.
   ///
-  /// They arrive approved because they are history being recorded, not
-  /// claims awaiting review — but each one carries `importedAt`, so the
-  /// ledger can always distinguish an approval that came from someone
-  /// checking a receipt from one that came from a spreadsheet.
+  /// Contributions arrive approved because they are history being recorded,
+  /// not claims awaiting review — but everything written here carries
+  /// `importedAt`, so the ledger can always distinguish a record someone
+  /// entered as it happened from one that arrived in bulk.
   Future<int> import({
     required String groupId,
     required MigrationPreview preview,
     required String importedBy,
   }) async {
-    final rows = preview.importable;
-    if (rows.isEmpty) return 0;
+    final contributions = preview.contributions;
+    final payments = preview.payments;
+    if (contributions.isEmpty && payments.isEmpty) return 0;
 
-    final col = _db.collection('groups').doc(groupId).collection('contributions');
+    final group = _db.collection('groups').doc(groupId);
+    final contribCol = group.collection('contributions');
+    final paymentCol = group.collection('builderPayments');
     final now = DateTime.now();
 
     // Firestore caps a batch at 500 writes; a few years of a large group
     // clears that easily.
     const chunkSize = 400;
-    for (var start = 0; start < rows.length; start += chunkSize) {
+
+    for (var start = 0; start < contributions.length; start += chunkSize) {
       final batch = _db.batch();
-      for (final r in rows.skip(start).take(chunkSize)) {
-        final ref = col.doc();
+      for (final r in contributions.skip(start).take(chunkSize)) {
+        final ref = contribCol.doc();
         batch.set(
           ref,
           Contribution(
@@ -249,14 +350,36 @@ class MigrationService {
       await batch.commit();
     }
 
+    for (var start = 0; start < payments.length; start += chunkSize) {
+      final batch = _db.batch();
+      for (final r in payments.skip(start).take(chunkSize)) {
+        final ref = paymentCol.doc();
+        batch.set(
+          ref,
+          BuilderPayment(
+            id: ref.id,
+            groupId: groupId,
+            amount: r.amount!,
+            date: r.date,
+            referenceNumber: r.reference,
+            recordedBy: importedBy,
+            recordedAt: now,
+            importedAt: now,
+          ).toMap(),
+        );
+      }
+      await batch.commit();
+    }
+
     await _audit.log(
       groupId: groupId,
       actorId: importedBy,
       action: 'import_contributions',
       targetType: 'group',
       targetId: groupId,
-      details: '${rows.length} টি পুরোনো কিস্তির এন্ট্রি Excel থেকে আমদানি করা হয়েছে',
+      details: 'Excel থেকে আমদানি: ${contributions.length} টি কিস্তি, '
+          '${payments.length} টি জমার এন্ট্রি',
     );
-    return rows.length;
+    return contributions.length + payments.length;
   }
 }

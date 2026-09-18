@@ -178,15 +178,21 @@ class S {
           '২. বন্ধুদের সদস্য হিসেবে যোগ করুন\n'
           '৩. প্রতি মাসে কিস্তির এন্ট্রি দিন',
       'data_migration': 'পুরোনো হিসাব আমদানি',
-      'migration_intro': 'অ্যাপ ব্যবহার শুরুর আগের হিসাব Excel থেকে একবারে তুলে আনতে পারেন। আগে নমুনা ফাইলটি নামিয়ে দেখুন কোন ঘরে কী বসাতে হয় — আপনার সদস্যদের নাম আগে থেকেই বসানো থাকবে।',
+      'migration_intro': 'অ্যাপ ব্যবহার শুরুর আগের পুরো হিসাব — সদস্যদের কিস্তি এবং বিল্ডার বা ব্যাংকে পাঠানো টাকা, দুটোই — একই Excel ফাইল থেকে একবারে তুলে আনতে পারেন। আগে নমুনা ফাইলটি নামিয়ে দেখুন কোন ঘরে কী বসাতে হয়; আপনার সদস্যদের নাম আগে থেকেই বসানো থাকবে।',
       'migration_step_download': 'নমুনা ফাইল নামান',
       'migration_step_fill': 'ফাইলটি পূরণ করুন',
       'migration_step_upload': 'ফাইলটি আপলোড করুন',
       'migration_template': 'নমুনা ফরম্যাট (.xlsx)',
       'migration_pick_file': 'Excel ফাইল বাছুন',
-      'migration_columns': 'সদস্য — নাম হুবহু অ্যাপে যেভাবে আছে\nমাস — ১ থেকে ১২\nবছর — যেমন ২০২৫\nপরিমাণ — শুধু সংখ্যা\nপদ্ধতি — নগদ / বিকাশ / ব্যাংক / অন্যান্য\nনোট — ঐচ্ছিক',
+      'migration_columns': 'ধরন — "কিস্তি" (সদস্যের জমা) বা "জমা" (বিল্ডার/ব্যাংকে পাঠানো)\n'
+          'সদস্য — শুধু কিস্তির সারিতে, নাম হুবহু অ্যাপে যেভাবে আছে\n'
+          'মাস — ১ থেকে ১২\nবছর — যেমন ২০২৫\n'
+          'দিন — শুধু "জমা" সারিতে (খালি রাখলে ১ ধরা হবে)\n'
+          'পরিমাণ — শুধু সংখ্যা\n'
+          'পদ্ধতি — নগদ / বিকাশ / ব্যাংক / অন্যান্য\n'
+          'রেফারেন্স — ঐচ্ছিক',
       'migration_preview': 'আমদানির আগে দেখে নিন',
-      'migration_will_import': 'যোগ হবে',
+      'migration_will_import_contributions': 'কিস্তি যোগ হবে',
       'migration_duplicates': 'আগে থেকেই আছে (বাদ যাবে)',
       'migration_errors': 'সমস্যা আছে (বাদ যাবে)',
       'migration_row': 'সারি',
@@ -366,15 +372,21 @@ class S {
           '2. Add your friends as members\n'
           '3. Record each month\'s instalment',
       'data_migration': 'Import past records',
-      'migration_intro': 'Bring in the history you kept before the app, in one go. Download the sample first to see which column is which — your own members are already filled in.',
+      'migration_intro': 'Bring in everything you tracked before the app — members\' instalments and the money sent out to the builder or bank — from one Excel file. Download the sample first to see which column is which; your own members are already filled in.',
       'migration_step_download': 'Download the sample',
       'migration_step_fill': 'Fill it in',
       'migration_step_upload': 'Upload the file',
       'migration_template': 'Sample format (.xlsx)',
       'migration_pick_file': 'Choose Excel file',
-      'migration_columns': 'Member — the name exactly as it appears in the app\nMonth — 1 to 12\nYear — e.g. 2025\nAmount — numbers only\nMethod — Cash / bKash / Bank / Other\nNote — optional',
+      'migration_columns': 'Type — "কিস্তি" for a member\'s instalment, "জমা" for money sent out\n'
+          'Member — instalment rows only, exactly as the name appears in the app\n'
+          'Month — 1 to 12\nYear — e.g. 2025\n'
+          'Day — payment rows only (blank means the 1st)\n'
+          'Amount — numbers only\n'
+          'Method — Cash / bKash / Bank / Other\n'
+          'Reference — optional',
       'migration_preview': 'Check before importing',
-      'migration_will_import': 'Will be added',
+      'migration_will_import_contributions': 'Instalments to add',
       'migration_duplicates': 'Already there (skipped)',
       'migration_errors': 'Has problems (skipped)',
       'migration_row': 'Row',

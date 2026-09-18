@@ -224,7 +224,16 @@ service cloud.firestore {
 
       match /builderPayments/{paymentId} {
         allow read: if isGroupMember(groupId);
-        allow create, update: if isGroupCollectorRole(groupId);
+        // Normal case: whoever actually remits the money records it.
+        // Second branch mirrors the contributions one — migrating a group's
+        // outgoing history from a spreadsheet, creator-only and required to
+        // carry importedAt so a bulk row can never pass as one typed in at
+        // the time.
+        allow create: if isGroupCollectorRole(groupId) ||
+          (isGroupCreator(groupId) &&
+            request.resource.data.recordedBy == request.auth.uid &&
+            request.resource.data.importedAt != null);
+        allow update: if isGroupCollectorRole(groupId);
         allow delete: if isGroupCreator(groupId);
       }
 

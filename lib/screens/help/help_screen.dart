@@ -170,10 +170,14 @@ const _sections = <_Section>[
     'Bringing old records in',
     'আগে Excel-এ হিসাব রাখতেন? Group Management → "পুরোনো হিসাব আমদানি" থেকে নমুনা ফাইল '
         'নামিয়ে পূরণ করে আপলোড করুন।\n\n'
+        'একই ফাইলেই দুই ধরনের সারি দিতে পারবেন — সদস্যদের কিস্তি, আর বিল্ডার বা ব্যাংকে '
+        'পাঠানো টাকা। প্রথম ঘরে "কিস্তি" না "জমা" লিখে দিলেই হলো।\n\n'
         'আপলোডের পরই কিছু লেখা হয় না — আগে দেখাবে কতগুলো যোগ হবে, কতগুলো আগে থেকেই আছে, '
         'আর কোন সারিতে সমস্যা। আপনি নিশ্চিত করলে তবেই যোগ হয়।',
     'Kept your accounts in Excel before? Group Management → "Import past records" gives you a '
         'sample file to fill in and upload.\n\n'
+        'One file carries both sides of the ledger — members\' instalments and the money sent '
+        'out to the builder or bank. The first column says which a row is.\n\n'
         'Nothing is written on upload: you first see how many rows will be added, how many are '
         'already there, and which rows have problems. It only saves once you confirm.',
   ),

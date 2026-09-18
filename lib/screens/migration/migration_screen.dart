@@ -8,6 +8,7 @@ import '../../l10n/app_strings.dart';
 import '../../models/group_member.dart';
 import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/builder_payment_service.dart';
 import '../../services/contribution_service.dart';
 import '../../services/group_service.dart';
 import '../../services/migration_service.dart';
@@ -15,6 +16,7 @@ import '../../services/user_directory.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/byte_share.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/group_type_labels.dart';
 import '../../widgets/kistify_app_bar.dart';
 
 /// Brings a group's pre-app history in from a spreadsheet.
@@ -59,7 +61,11 @@ class _MigrationScreenState extends State<MigrationScreen> {
   Future<void> _downloadTemplate() async {
     setState(() => _busy = true);
     try {
-      final bytes = MigrationService.buildTemplate(members: _members, memberNames: _names);
+      final bytes = MigrationService.buildTemplate(
+        group: widget.group,
+        members: _members,
+        memberNames: _names,
+      );
       await shareBytes(
         bytes: bytes,
         filename: '${widget.group.name} — মাইগ্রেশন ফরম্যাট.xlsx',
@@ -93,12 +99,17 @@ class _MigrationScreenState extends State<MigrationScreen> {
         return;
       }
 
-      final existing = await ContributionService().watchGroupContributions(widget.group.id).first;
+      // Both sides of the ledger are needed up front, so duplicates can be
+      // detected against whatever is already recorded.
+      final existingContributions =
+          await ContributionService().watchGroupContributions(widget.group.id).first;
+      final existingPayments = await BuilderPaymentService().watch(widget.group.id).first;
       final preview = MigrationService.parse(
         bytes: Uint8List.fromList(bytes),
         members: _members,
         memberNames: _names,
-        existing: existing,
+        existingContributions: existingContributions,
+        existingPayments: existingPayments,
       );
       if (mounted) setState(() => _preview = preview);
     } catch (e) {
@@ -206,10 +217,16 @@ class _MigrationScreenState extends State<MigrationScreen> {
             Text(S.t(context, 'migration_preview'), style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             _Summary(
-              label: S.t(context, 'migration_will_import'),
-              value: '${preview.importable.length}',
-              amount: preview.total,
+              label: S.t(context, 'migration_will_import_contributions'),
+              value: '${preview.contributions.length}',
+              amount: preview.contributionTotal,
               color: AppColors.approvedFg,
+            ),
+            _Summary(
+              label: S.t(context, widget.group.groupType.outgoingTotalKey),
+              value: '${preview.payments.length}',
+              amount: preview.paymentTotal,
+              color: AppColors.roleCollectorFg,
             ),
             if (preview.duplicates.isNotEmpty)
               _Summary(

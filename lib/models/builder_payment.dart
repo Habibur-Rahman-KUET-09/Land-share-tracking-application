@@ -12,6 +12,12 @@ class BuilderPayment {
   final String recordedBy;
   final DateTime recordedAt;
 
+  /// Set only on payments brought in from a spreadsheet during migration —
+  /// the outgoing-ledger counterpart of [Contribution.importedAt], for the
+  /// same reason: the record should say which entries someone typed in as
+  /// they happened and which arrived in bulk.
+  final DateTime? importedAt;
+
   const BuilderPayment({
     required this.id,
     required this.groupId,
@@ -21,6 +27,7 @@ class BuilderPayment {
     this.receiptUrl,
     required this.recordedBy,
     required this.recordedAt,
+    this.importedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -31,6 +38,7 @@ class BuilderPayment {
       'receiptUrl': receiptUrl,
       'recordedBy': recordedBy,
       'recordedAt': Timestamp.fromDate(recordedAt),
+      'importedAt': importedAt == null ? null : Timestamp.fromDate(importedAt!),
     };
   }
 
@@ -44,6 +52,7 @@ class BuilderPayment {
       receiptUrl: map['receiptUrl'] as String?,
       recordedBy: (map['recordedBy'] as String?) ?? '',
       recordedAt: (map['recordedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      importedAt: (map['importedAt'] as Timestamp?)?.toDate(),
     );
   }
 }
