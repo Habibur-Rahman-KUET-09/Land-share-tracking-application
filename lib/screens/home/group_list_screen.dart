@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/locale_provider.dart';
 import '../../services/group_service.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
@@ -12,6 +11,7 @@ import '../../utils/currency_formatter.dart';
 import '../../utils/group_type_labels.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/kistify_mark.dart';
+import '../account/account_screen.dart';
 import '../group/create_group_screen.dart';
 import '../group/group_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
@@ -63,15 +63,15 @@ class GroupListScreen extends StatelessWidget {
               );
             },
           ),
+          // Language and sign-out moved into AccountScreen, which is also
+          // where password change lives — a row of bare icons had nowhere
+          // sensible to put an option only some accounts can use.
           IconButton(
-            tooltip: S.t(context, 'language'),
-            icon: const Icon(Icons.translate),
-            onPressed: () => context.read<LocaleProvider>().toggle(),
-          ),
-          IconButton(
-            tooltip: S.t(context, 'logout'),
-            icon: const Icon(Icons.logout),
-            onPressed: () => context.read<AppAuthProvider>().signOut(),
+            tooltip: S.t(context, 'account'),
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AccountScreen()),
+            ),
           ),
         ],
       ),

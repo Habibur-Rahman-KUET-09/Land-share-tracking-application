@@ -56,6 +56,49 @@ class AuthService {
     return _auth.signInWithEmailAndPassword(email: email, password: password);
   }
 
+  /// Whether this account actually has a Firebase password to change.
+  ///
+  /// Someone who only ever tapped "Sign in with Google" has no password at
+  /// all — offering them a change-password form would be a dead end, since
+  /// their credentials live with Google.
+  bool get hasPasswordSignIn =>
+      _auth.currentUser?.providerData.any((p) => p.providerId == 'password') ?? false;
+
+  /// Changes the signed-in user's password.
+  ///
+  /// Firebase requires a recent sign-in before it will accept this, so the
+  /// current password is re-checked first. That double-duty is deliberate:
+  /// it also stops someone who walks up to an unlocked phone from taking
+  /// the account over without knowing the existing password.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = _auth.currentUser;
+    final email = user?.email;
+    if (user == null || email == null) {
+      throw StateError('পাসওয়ার্ড পরিবর্তনের জন্য ইমেইল দিয়ে লগইন করা থাকতে হবে');
+    }
+    if (!hasPasswordSignIn) {
+      throw StateError('এই অ্যাকাউন্টটি Google দিয়ে খোলা — এর কোনো পাসওয়ার্ড নেই');
+    }
+    if (currentPassword == newPassword) {
+      throw StateError('নতুন পাসওয়ার্ড আগেরটির চেয়ে আলাদা হতে হবে');
+    }
+    await user.reauthenticateWithCredential(
+      EmailAuthProvider.credential(email: email, password: currentPassword),
+    );
+    await user.updatePassword(newPassword);
+  }
+
+  /// For someone who can't sign in at all. Firebase deliberately reports
+  /// success whether or not the address is registered, so the UI must not
+  /// claim the mail was definitely sent to an existing account — that would
+  /// turn this into a way to test which emails have accounts.
+  Future<void> sendPasswordReset(String email) {
+    return _auth.sendPasswordResetEmail(email: email.trim());
+  }
+
   // ---------------------------------------------------------------------
   // Google
   // ---------------------------------------------------------------------

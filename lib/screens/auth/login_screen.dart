@@ -33,8 +33,31 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // Defence in depth against password guessing. Firebase does the real
+  // rate limiting server side — it has to, since nothing stops an attacker
+  // calling the API directly instead of using this screen. What this adds
+  // is a hard stop in front of the casual case (someone trying passwords on
+  // a borrowed phone), and it makes the slowdown visible instead of leaving
+  // the user staring at a generic error after Firebase quietly throttles.
+  static const _maxAttempts = 5;
+  static const _lockout = Duration(minutes: 1);
+  int _failedAttempts = 0;
+  DateTime? _lockedUntil;
+
+  Duration? get _remainingLockout {
+    final until = _lockedUntil;
+    if (until == null) return null;
+    final left = until.difference(DateTime.now());
+    return left.isNegative ? null : left;
+  }
+
   Future<void> _signInWithEmail() async {
     if (!_emailFormKey.currentState!.validate()) return;
+    final waiting = _remainingLockout;
+    if (waiting != null) {
+      setState(() => _error = S.t(context, 'too_many_attempts'));
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
@@ -42,11 +65,42 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final auth = context.read<AppAuthProvider>().authService;
       await auth.signInWithEmail(email: _emailCtrl.text.trim(), password: _passwordCtrl.text);
+      _failedAttempts = 0;
+      _lockedUntil = null;
     } on FirebaseAuthException catch (e) {
-      setState(() => _error = e.message ?? e.code);
+      _failedAttempts++;
+      if (_failedAttempts >= _maxAttempts) {
+        _lockedUntil = DateTime.now().add(_lockout);
+        _failedAttempts = 0;
+        if (mounted) setState(() => _error = S.t(context, 'too_many_attempts'));
+        return;
+      }
+      // Never distinguish "no such account" from "wrong password": telling
+      // them apart hands an attacker a way to find out which addresses are
+      // registered.
+      if (mounted) setState(() => _error = S.t(context, 'sign_in_failed'));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _sendPasswordReset() async {
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _error = S.t(context, 'enter_email_first'));
+      return;
+    }
+    try {
+      await context.read<AppAuthProvider>().authService.sendPasswordReset(email);
+    } catch (_) {
+      // Swallowed on purpose — see the message below. Reporting a failure
+      // here would leak whether the address exists.
+    }
+    if (!mounted) return;
+    setState(() => _error = null);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(S.t(context, 'reset_link_sent'))),
+    );
   }
 
   Future<void> _signInWithGoogle() async {
@@ -105,7 +159,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   : Text(S.t(context, 'login')),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
+          TextButton(
+            onPressed: _loading ? null : _sendPasswordReset,
+            child: Text(S.t(context, 'forgot_password')),
+          ),
           TextButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const RegisterScreen()),

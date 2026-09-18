@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/password_policy.dart';
 import '../../widgets/kistify_app_bar.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -89,10 +90,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _passwordCtrl,
-                    decoration:
-                        InputDecoration(labelText: S.t(context, 'password'), border: const OutlineInputBorder()),
+                    decoration: InputDecoration(
+                      labelText: S.t(context, 'password'),
+                      helperText: S.t(context, 'password_rule_hint'),
+                      helperMaxLines: 2,
+                      border: const OutlineInputBorder(),
+                    ),
                     obscureText: true,
-                    validator: (v) => (v == null || v.length < 6) ? S.t(context, 'required_field') : null,
+                    validator: (v) {
+                      final problem = PasswordPolicy.problemKey(v);
+                      return problem == null ? null : S.t(context, problem);
+                    },
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
