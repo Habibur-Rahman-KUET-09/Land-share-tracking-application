@@ -55,7 +55,8 @@
           ]
         }
       ],
-      "site": "kistify"
+      "site": "kistify",
+      "cleanUrls": true
     },
     {
       "public": "build/web",
@@ -99,7 +100,8 @@
           ]
         }
       ],
-      "site": "landsharetrackingsystem"
+      "site": "landsharetrackingsystem",
+      "cleanUrls": true
     }
   ]
 }

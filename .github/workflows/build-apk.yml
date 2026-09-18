@@ -1,5 +1,17 @@
 name: Build APK
 
+# Produces two things on every push to main:
+#   - split-per-ABI APKs, for installing directly on a phone (what we've
+#     been using all along)
+#   - an .aab App Bundle, which is the only format Play accepts for a new
+#     app — signed with the upload key when the secrets below are present
+#
+# Play upload signing (optional; without it the .aab is debug-signed and
+# Play will reject it, but the APKs still build):
+#   ANDROID_KEYSTORE_BASE64  — base64 of the upload .jks
+#   ANDROID_KEYSTORE_PASSWORD — its password (same for store and key)
+#   ANDROID_KEY_ALIAS        — the key alias inside the keystore
+
 on:
   workflow_dispatch: {}
   push:
@@ -23,14 +35,52 @@ jobs:
 
       - run: flutter test
 
+      # Writes the upload key out of the repository secrets. Skipped when
+      # they aren't set, so forks and pre-setup runs still build.
+      - name: Restore upload keystore
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No upload keystore secret set — release artifacts will be debug-signed."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storeFile=upload-keystore.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEYSTORE_PASSWORD
+          EOF
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
       # One APK per CPU architecture instead of a single universal one — a
       # phone only ever needs its own, and this alone roughly halves the
       # download most users see (arm64-v8a covers virtually every phone
       # from the last several years).
       - run: flutter build apk --release --split-per-abi
 
+      # What gets uploaded to Play Console. Play re-signs it with its own
+      # key and generates the per-device APKs itself.
+      - run: flutter build appbundle --release
+
+      # Never leave the key on the runner's disk for later steps.
+      - name: Remove upload keystore
+        if: always()
+        run: rm -f android/upload-keystore.jks android/key.properties
+
       - uses: actions/upload-artifact@v4
         with:
           name: land-installment-tracker-apk
           path: build/app/outputs/flutter-apk/*.apk
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kistify-play-bundle
+          path: build/app/outputs/bundle/release/*.aab
           retention-days: 30

@@ -58,3 +58,13 @@ functions/.env.*
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Play upload signing key — never commit these. The keystore reaches CI as a
+# base64 GitHub secret (see .github/workflows/build-apk.yml); key.properties
+# is written from secrets at build time, or created by hand for local
+# release builds. android/app/debug.keystore is deliberately NOT here: it is
+# a throwaway debug key, committed on purpose so every build shares one SHA-1.
+android/key.properties
+*.jks
+*.keystore
+!android/app/debug.keystore

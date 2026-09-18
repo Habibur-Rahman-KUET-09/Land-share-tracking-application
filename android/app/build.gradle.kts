@@ -1,9 +1,21 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
 }
+
+// The upload key lives outside the repo: android/key.properties (local) or
+// written by CI from a secret. When it isn't there — a contributor's clone,
+// a plain `flutter run` — release still builds, just debug-signed, which is
+// fine for everything except uploading to Play.
+val keystoreProperties = Properties().apply {
+    val f = rootProject.file("key.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val hasUploadKey = keystoreProperties.getProperty("storeFile") != null
 
 android {
     namespace = "com.landshare.land_installment_tracker"
@@ -43,13 +55,25 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+
+        // Play refuses anything signed with a debug key. This is the *upload*
+        // key: Play re-signs the app with its own key before distributing it
+        // (Play App Signing), which is why the release SHA-1 registered in
+        // Firebase has to be Play's, not this one's — otherwise Google
+        // Sign-In fails for everyone who installs from the store.
+        if (hasUploadKey) {
+            create("upload") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (hasUploadKey) "upload" else "debug")
             // R8 minification was tried here for app size, but it broke the
             // app on a real Android 10 device (wouldn't open at all) — with
             // no local Android SDK to test against before shipping, R8
