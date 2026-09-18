@@ -68,7 +68,3 @@ android/key.properties
 *.jks
 *.keystore
 !android/app/debug.keystore
-
-# Held back until the privacy contact address is decided — publishing a
-# policy with a placeholder in it is worse than not publishing one yet.
-web/privacy.html
