@@ -136,49 +136,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.picture_as_pdf_outlined),
-                    label: Text(S.t(context, 'export_pdf')),
-                    onPressed: _exporting ? null : () => _export(pdf: true),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.grid_on_outlined),
-                    label: Text(S.t(context, 'export_excel')),
-                    onPressed: _exporting ? null : () => _export(pdf: false),
-                  ),
-                ),
-              ],
+            // Two reports that answer different questions, each said plainly
+            // enough that nobody has to download one to find out which.
+            _ReportCard(
+              icon: Icons.summarize_outlined,
+              iconColor: AppColors.primary,
+              title: S.t(context, 'general_report'),
+              description: S.t(context, 'general_report_desc'),
+              busy: _exporting,
+              onPdf: () => _export(pdf: true),
+              onExcel: () => _export(pdf: false),
             ),
-            const SizedBox(height: 16),
-            Text(
-              S.t(context, 'monthly_matrix_report'),
-              style: const TextStyle(fontSize: 13, color: AppColors.mutedText),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.picture_as_pdf_outlined),
-                    label: Text(S.t(context, 'export_pdf')),
-                    onPressed: _exporting ? null : () => _exportMatrix(pdf: true),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.grid_on_outlined),
-                    label: Text(S.t(context, 'export_excel')),
-                    onPressed: _exporting ? null : () => _exportMatrix(pdf: false),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 12),
+            _ReportCard(
+              icon: Icons.grid_view_outlined,
+              iconColor: AppColors.roleCreatorFg,
+              title: S.t(context, 'matrix_report'),
+              description: S.t(context, 'matrix_report_desc'),
+              busy: _exporting,
+              onPdf: () => _exportMatrix(pdf: true),
+              onExcel: () => _exportMatrix(pdf: false),
             ),
             const SizedBox(height: 24),
             _SectionHeader(
@@ -281,6 +258,67 @@ class _ReportsScreenState extends State<ReportsScreen> {
       case ContributionStatus.pendingConfirmation:
         return 'pending';
     }
+  }
+}
+
+/// One report: what it is, what is in it, and the two ways to take it away.
+class _ReportCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String description;
+  final bool busy;
+  final VoidCallback onPdf;
+  final VoidCallback onExcel;
+
+  const _ReportCard({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.description,
+    required this.busy,
+    required this.onPdf,
+    required this.onExcel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SectionHeader(icon: icon, iconColor: iconColor, label: title),
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: const TextStyle(fontSize: 12.5, height: 1.6, color: AppColors.bodyText),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: Text(S.t(context, 'export_pdf')),
+                    onPressed: busy ? null : onPdf,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.grid_on_outlined),
+                    label: Text(S.t(context, 'export_excel')),
+                    onPressed: busy ? null : onExcel,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

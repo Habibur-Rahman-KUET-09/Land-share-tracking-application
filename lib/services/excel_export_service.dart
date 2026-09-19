@@ -9,6 +9,7 @@ import '../models/group_member.dart';
 import '../models/land_group.dart';
 import '../utils/byte_share.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/report_range.dart';
 
 /// FR 2.7 "Export করার সুবিধা (PDF/Excel)" — the Excel counterpart of
 /// [PdfExportService], same content in spreadsheet form.
@@ -96,7 +97,7 @@ class ExcelExportService {
     );
     await shareBytes(
       bytes: bytes,
-      filename: '${group.name} — রিপোর্ট.xlsx',
+      filename: '${group.name} — সাধারণ রিপোর্ট.xlsx',
       mimeType: _xlsxMimeType,
       text: '${group.name} — রিপোর্ট',
       sharePosition: sharePosition,
@@ -118,7 +119,7 @@ class ExcelExportService {
     required Map<String, String> memberNames,
   }) async {
     final excel = Excel.createExcel();
-    const sheetName = 'মাসভিত্তিক রিপোর্ট';
+    const sheetName = 'ম্যাট্রিক্স রিপোর্ট';
     final sheet = excel[sheetName];
     for (final existing in excel.tables.keys.toList()) {
       if (existing != sheetName) excel.delete(existing);
@@ -126,7 +127,7 @@ class ExcelExportService {
     excel.setDefaultSheet(sheetName);
 
     final heading = group.landLocation.isEmpty ? group.name : '${group.name} — ${group.landLocation}';
-    sheet.appendRow([TextCellValue('$heading — মাসভিত্তিক পেমেন্ট ম্যাট্রিক্স')]);
+    sheet.appendRow([TextCellValue('$heading — ম্যাট্রিক্স রিপোর্ট (মাসে মাসে কে কত দিয়েছেন)')]);
     sheet.appendRow([TextCellValue('')]);
 
     final activeMembers = members.where((m) => m.isActive).toList();
@@ -138,13 +139,11 @@ class ExcelExportService {
       TextCellValue('রেফারেন্স'),
     ]);
 
-    final months = <DateTime>[];
-    var cur = DateTime(group.createdAt.year, group.createdAt.month);
-    final lastMonth = DateTime(DateTime.now().year, DateTime.now().month);
-    while (!cur.isAfter(lastMonth)) {
-      months.add(cur);
-      cur = DateTime(cur.year, cur.month + 1);
-    }
+    final months = reportMonths(
+      group: group,
+      contributions: approvedContributions,
+      payments: builderPayments,
+    );
 
     double grandTotal = 0;
     final memberGrandTotals = {for (final m in activeMembers) m.uid: 0.0};
@@ -207,9 +206,9 @@ class ExcelExportService {
     );
     await shareBytes(
       bytes: bytes,
-      filename: '${group.name} — মাসভিত্তিক রিপোর্ট.xlsx',
+      filename: '${group.name} — ম্যাট্রিক্স রিপোর্ট.xlsx',
       mimeType: _xlsxMimeType,
-      text: '${group.name} — মাসভিত্তিক রিপোর্ট',
+      text: '${group.name} — ম্যাট্রিক্স রিপোর্ট',
       sharePosition: sharePosition,
     );
   }

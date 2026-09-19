@@ -10,6 +10,7 @@ import '../models/group_member.dart';
 import '../models/land_group.dart';
 import '../utils/bangla_pdf_text.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/report_range.dart';
 
 /// FR 2.7 "Export/Share Statement (PDF)" — a group's full report: per-member
 /// summary + builder payment ledger. Bangla labels are rasterized through
@@ -186,7 +187,7 @@ class PdfExportService {
     );
     await Printing.sharePdf(
       bytes: await doc.save(),
-      filename: '${group.name} — রিপোর্ট.pdf',
+      filename: '${group.name} — সাধারণ রিপোর্ট.pdf',
       bounds: sharePosition,
     );
   }
@@ -229,18 +230,16 @@ class PdfExportService {
     final activeMembers = members.where((m) => m.isActive).toList();
     final heading = group.landLocation.isEmpty ? group.name : '${group.name} — ${group.landLocation}';
     final subtitle = await label(
-      '$heading — মাসভিত্তিক পেমেন্ট ম্যাট্রিক্স',
+      '$heading — ম্যাট্রিক্স রিপোর্ট (মাসে মাসে কে কত দিয়েছেন)',
       fontSize: 14,
       bold: true,
     );
 
-    final months = <DateTime>[];
-    var cur = DateTime(group.createdAt.year, group.createdAt.month);
-    final lastMonth = DateTime(DateTime.now().year, DateTime.now().month);
-    while (!cur.isAfter(lastMonth)) {
-      months.add(cur);
-      cur = DateTime(cur.year, cur.month + 1);
-    }
+    final months = reportMonths(
+      group: group,
+      contributions: approvedContributions,
+      payments: builderPayments,
+    );
 
     final headerCells = <pw.Widget>[
       cell(await label('ক্র.', bold: true)),
@@ -356,7 +355,7 @@ class PdfExportService {
     );
     await Printing.sharePdf(
       bytes: await doc.save(),
-      filename: '${group.name} — মাসভিত্তিক রিপোর্ট.pdf',
+      filename: '${group.name} — ম্যাট্রিক্স রিপোর্ট.pdf',
       bounds: sharePosition,
     );
   }
