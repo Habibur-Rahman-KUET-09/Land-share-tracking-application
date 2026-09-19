@@ -7,6 +7,7 @@ import '../models/builder_payment.dart';
 import '../models/contribution.dart';
 import '../models/group_member.dart';
 import '../models/land_group.dart';
+import '../utils/bangla_months.dart';
 import '../utils/byte_share.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/report_range.dart';
@@ -104,11 +105,6 @@ class ExcelExportService {
     );
   }
 
-  static const _monthAbbr = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-
   /// Excel counterpart of [PdfExportService]'s monthly matrix — see that
   /// method's doc comment for the layout this mirrors.
   static Future<Uint8List> generateMonthlyMatrix({
@@ -154,7 +150,7 @@ class ExcelExportService {
       double rowTotal = 0;
       final row = <CellValue>[
         TextCellValue('${i + 1}'),
-        TextCellValue('${_monthAbbr[m.month - 1]}-${m.year}'),
+        TextCellValue('${banglaMonthAbbr[m.month - 1]}-${m.year}'),
       ];
       for (final mem in activeMembers) {
         final amt = rowContribs.where((c) => c.memberId == mem.uid).fold<double>(0, (s, c) => s + c.amount);

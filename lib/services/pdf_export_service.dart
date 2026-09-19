@@ -8,6 +8,7 @@ import '../models/builder_payment.dart';
 import '../models/contribution.dart';
 import '../models/group_member.dart';
 import '../models/land_group.dart';
+import '../utils/bangla_months.dart';
 import '../utils/bangla_pdf_text.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/report_range.dart';
@@ -192,11 +193,6 @@ class PdfExportService {
     );
   }
 
-  static const _monthAbbr = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-
   /// One row per calendar month from the group's creation to now, one
   /// column per active member showing their approved contributions that
   /// month, a Total column, and a Remark column auto-filled from that
@@ -262,7 +258,18 @@ class PdfExportService {
       double rowTotal = 0;
       final cells = <pw.Widget>[
         cell(pw.Text('${i + 1}', style: numberStyle)),
-        cell(pw.Text('${_monthAbbr[m.month - 1]}-${m.year}', style: numberStyle)),
+        // The month name is rasterized (Bangla), the year stays real text.
+        // Splitting them keeps the image cache to twelve entries instead of
+        // one per row — a matrix can run to eighty rows.
+        cell(
+          pw.Row(
+            mainAxisSize: pw.MainAxisSize.min,
+            children: [
+              await label(banglaMonthAbbr[m.month - 1]),
+              pw.Text('-${m.year}', style: numberStyle),
+            ],
+          ),
+        ),
       ];
       for (final mem in activeMembers) {
         final amt = rowContribs.where((c) => c.memberId == mem.uid).fold<double>(0, (s, c) => s + c.amount);
