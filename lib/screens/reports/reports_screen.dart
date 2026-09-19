@@ -158,88 +158,92 @@ class _ReportsScreenState extends State<ReportsScreen> {
               onExcel: () => _exportMatrix(pdf: false),
             ),
             const SizedBox(height: 24),
-            _SectionHeader(
+            _CollapsibleSection(
               icon: Icons.receipt_long_outlined,
               iconColor: AppColors.roleCollectorFg,
               label: S.t(context, 'individual_history'),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedMemberId,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-              hint: Text(S.t(context, 'members')),
-              items: members
-                  .map((m) => DropdownMenuItem(value: m.uid, child: MemberName(uid: m.uid)))
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedMemberId = v),
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedMemberId,
+                  decoration: const InputDecoration(border: OutlineInputBorder()),
+                  hint: Text(S.t(context, 'members')),
+                  items: members
+                      .map((m) => DropdownMenuItem(value: m.uid, child: MemberName(uid: m.uid)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedMemberId = v),
+                ),
+                const SizedBox(height: 12),
+                if (_selectedMemberId != null)
+                  StreamBuilder<List<Contribution>>(
+                    stream: ContributionService()
+                        .watchMemberContributions(widget.group.id, _selectedMemberId!),
+                    builder: (context, snap) {
+                      final entries = snap.data ?? [];
+                      if (entries.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Text('কোনো এন্ট্রি নেই।', style: TextStyle(color: Colors.grey)),
+                        );
+                      }
+                      return Column(
+                        children: entries
+                            .map(
+                              (c) => Card(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                child: ListTile(
+                                  dense: true,
+                                  title: Text(
+                                      '${c.month}/${c.year} — ${CurrencyFormatter.format(c.amount)}'),
+                                  subtitle: Text(S.t(context, 'method_${c.method.name}')),
+                                  trailing: Text(S.t(context, 'status_${_statusKey(c.status)}')),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      );
+                    },
+                  ),
+              ],
             ),
             const SizedBox(height: 12),
-            if (_selectedMemberId != null)
-              StreamBuilder<List<Contribution>>(
-                stream: ContributionService().watchMemberContributions(widget.group.id, _selectedMemberId!),
-                builder: (context, snap) {
-                  final entries = snap.data ?? [];
-                  if (entries.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Text('কোনো এন্ট্রি নেই।', style: TextStyle(color: Colors.grey)),
-                    );
-                  }
-                  return Column(
-                    children: entries
-                        .map(
-                          (c) => Card(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            child: ListTile(
-                              dense: true,
-                              title: Text('${c.month}/${c.year} — ${CurrencyFormatter.format(c.amount)}'),
-                              subtitle: Text(S.t(context, 'method_${c.method.name}')),
-                              trailing: Text(S.t(context, 'status_${_statusKey(c.status)}')),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  );
-                },
-              ),
-            const SizedBox(height: 24),
-            _SectionHeader(
+            _CollapsibleSection(
               icon: Icons.account_balance_outlined,
               iconColor: AppColors.primary,
               label: S.t(context, 'builder_ledger'),
-            ),
-            const SizedBox(height: 8),
-            StreamBuilder<List<BuilderPayment>>(
-              stream: BuilderPaymentService().watch(widget.group.id),
-              builder: (context, snap) {
-                final payments = snap.data ?? [];
-                if (payments.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text('কোনো এন্ট্রি নেই।', style: TextStyle(color: Colors.grey)),
-                  );
-                }
-                return Column(
-                  children: payments
-                      .map(
-                        (p) => Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          child: ListTile(
-                            dense: true,
-                            leading: const CircleAvatar(
-                              radius: 15,
-                              backgroundColor: Color(0x1A0F6E5C),
-                              foregroundColor: AppColors.primary,
-                              child: Icon(Icons.payments_outlined, size: 16),
+              children: [
+                StreamBuilder<List<BuilderPayment>>(
+                  stream: BuilderPaymentService().watch(widget.group.id),
+                  builder: (context, snap) {
+                    final payments = snap.data ?? [];
+                    if (payments.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Text('কোনো এন্ট্রি নেই।', style: TextStyle(color: Colors.grey)),
+                      );
+                    }
+                    return Column(
+                      children: payments
+                          .map(
+                            (p) => Card(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              child: ListTile(
+                                dense: true,
+                                leading: const CircleAvatar(
+                                  radius: 15,
+                                  backgroundColor: Color(0x1A0F6E5C),
+                                  foregroundColor: AppColors.primary,
+                                  child: Icon(Icons.payments_outlined, size: 16),
+                                ),
+                                title: Text(CurrencyFormatter.format(p.amount)),
+                                subtitle: Text('${p.date.day}-${p.date.month}-${p.date.year}'),
+                              ),
                             ),
-                            title: Text(CurrencyFormatter.format(p.amount)),
-                            subtitle: Text('${p.date.day}-${p.date.month}-${p.date.year}'),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                );
-              },
+                          )
+                          .toList(),
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         );
@@ -258,6 +262,70 @@ class _ReportsScreenState extends State<ReportsScreen> {
       case ContributionStatus.pendingConfirmation:
         return 'pending';
     }
+  }
+}
+
+/// A section that can be folded away.
+///
+/// Both lists below the reports can run to dozens of rows — pick a member
+/// with four years of history and the builder ledger underneath is pushed
+/// off the screen with no way back except scrolling past all of it. Each
+/// one now collapses, and stays open by default so nothing moves for
+/// anyone who liked it as it was.
+class _CollapsibleSection extends StatefulWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final List<Widget> children;
+
+  const _CollapsibleSection({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.children,
+  });
+
+  @override
+  State<_CollapsibleSection> createState() => _CollapsibleSectionState();
+}
+
+class _CollapsibleSectionState extends State<_CollapsibleSection> {
+  bool _open = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _open = !_open),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _SectionHeader(
+                    icon: widget.icon,
+                    iconColor: widget.iconColor,
+                    label: widget.label,
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: _open ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 150),
+                  child: const Icon(Icons.expand_more, color: AppColors.mutedText),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_open) ...[
+          const SizedBox(height: 8),
+          ...widget.children,
+        ],
+      ],
+    );
   }
 }
 
