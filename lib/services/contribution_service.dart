@@ -171,9 +171,29 @@ class ContributionService {
     );
   }
 
+  /// Newest first, by the month the entry is *for* rather than the moment
+  /// it was typed. Those differ more often than they agree: a migrated
+  /// group's four years of history all carry the same submittedAt (the
+  /// import), and a member catching up on three months files them minutes
+  /// apart. Ordering by the period is what a ledger means by "by date".
+  ///
+  /// Sorted here rather than in the query because ordering by year and
+  /// month together, alongside the where() clauses these streams already
+  /// use, would need a composite index per combination. The lists are
+  /// already fully in memory, and a group's history is hundreds of rows,
+  /// not millions.
+  static int _newestFirst(Contribution a, Contribution b) {
+    final period = DateTime(b.year, b.month).compareTo(DateTime(a.year, a.month));
+    if (period != 0) return period;
+    return b.submittedAt.compareTo(a.submittedAt);
+  }
+
+  static List<Contribution> _sorted(Iterable<Contribution> entries) =>
+      entries.toList()..sort(_newestFirst);
+
   Stream<List<Contribution>> watchGroupContributions(String groupId) {
-    return _col(groupId).orderBy('submittedAt', descending: true).snapshots().map(
-          (snap) => snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data())).toList(),
+    return _col(groupId).snapshots().map(
+          (snap) => _sorted(snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data()))),
         );
   }
 
@@ -181,7 +201,8 @@ class ContributionService {
     return _col(groupId)
         .where('status', isEqualTo: 'pendingConfirmation')
         .snapshots()
-        .map((snap) => snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data())).toList());
+        .map((snap) =>
+            _sorted(snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data()))));
   }
 
   /// Just one month's entries, for screens that only ever show a single
@@ -196,12 +217,13 @@ class ContributionService {
         .where('month', isEqualTo: month)
         .where('year', isEqualTo: year)
         .snapshots()
-        .map((snap) => snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data())).toList());
+        .map((snap) =>
+            _sorted(snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data()))));
   }
 
   Stream<List<Contribution>> watchMemberContributions(String groupId, String memberId) {
     return _col(groupId).where('memberId', isEqualTo: memberId).snapshots().map(
-          (snap) => snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data())).toList(),
+          (snap) => _sorted(snap.docs.map((d) => Contribution.fromMap(groupId, d.id, d.data()))),
         );
   }
 }

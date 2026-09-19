@@ -225,8 +225,12 @@ class _MyContributions extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final entries =
-            (snapshot.data ?? []).where((c) => isInDateRange(c.submittedAt, range)).toList();
+        // Filter on the month the entry is for, matching the order the list
+        // is now in. Filtering on submittedAt would hide four years of
+        // migrated history behind a single import date.
+        final entries = (snapshot.data ?? [])
+            .where((c) => isInDateRange(DateTime(c.year, c.month), range))
+            .toList();
         if (entries.isEmpty) {
           return EmptyState(icon: Icons.payments_outlined, message: S.t(context, 'no_pending_approvals'));
         }

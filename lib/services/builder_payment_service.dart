@@ -46,9 +46,17 @@ class BuilderPaymentService {
     return ref.id;
   }
 
+  /// Newest first. The query already orders by date; the second sort settles
+  /// same-day payments by when they were recorded, which a migrated group
+  /// has plenty of — several months handed over on one day come back in
+  /// whatever order the index returns them otherwise.
   Stream<List<BuilderPayment>> watch(String groupId) {
     return _col(groupId).orderBy('date', descending: true).snapshots().map(
-          (snap) => snap.docs.map((d) => BuilderPayment.fromMap(groupId, d.id, d.data())).toList(),
+          (snap) => snap.docs.map((d) => BuilderPayment.fromMap(groupId, d.id, d.data())).toList()
+            ..sort((a, b) {
+              final byDate = b.date.compareTo(a.date);
+              return byDate != 0 ? byDate : b.recordedAt.compareTo(a.recordedAt);
+            }),
         );
   }
 }
