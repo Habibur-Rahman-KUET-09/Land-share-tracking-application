@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../models/builder_payment.dart';
 import '../../models/contribution.dart';
 import '../../models/group_member.dart';
 import '../../models/land_group.dart';
+import '../../services/builder_payment_service.dart';
 import '../../services/contribution_service.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_theme.dart';
@@ -26,7 +28,17 @@ class DashboardScreen extends StatelessWidget {
       stream: GroupService().watchMembers(group.id),
       builder: (context, memberSnap) {
         final members = (memberSnap.data ?? []).where((m) => m.isActive).toList();
-        return StreamBuilder<List<Contribution>>(
+        return StreamBuilder<List<BuilderPayment>>(
+          stream: BuilderPaymentService().watch(group.id),
+          builder: (context, paymentSnap) =>
+              _buildBody(context, members, paymentSnap.data ?? const <BuilderPayment>[]),
+        );
+      },
+    );
+  }
+
+  Widget _buildBody(BuildContext context, List<GroupMember> members, List<BuilderPayment> payments) {
+    return StreamBuilder<List<Contribution>>(
           stream: ContributionService().watchGroupContributions(group.id),
           builder: (context, contribSnap) {
             final contributions = contribSnap.data ?? [];
@@ -95,6 +107,8 @@ class DashboardScreen extends StatelessWidget {
                 firstCollection = month;
               }
             }
+            final paidToBuilder = payments.fold<double>(0, (sum, p) => sum + p.amount);
+
             final start = firstCollection;
             final elapsedMonths = start == null
                 ? 0
@@ -187,15 +201,18 @@ class DashboardScreen extends StatelessWidget {
                         const SizedBox(height: 6),
                         if (start != null)
                           Text(
-                            // How long, how many times, how much — the three
-                            // facts behind the count above, in the order a
-                            // person says them.
+                            // How long, how many hand-overs, how much. The
+                            // count is builder payments, not entries: an
+                            // entry is one member's month, so five friends
+                            // paying together is five entries and one
+                            // payment out. Counting entries answered a
+                            // question nobody asked of this line.
                             S
                                 .t(context, 'collected_summary')
                                 .replaceAll('{months}', '$elapsedMonths')
-                                .replaceAll('{times}', '${approved.length}')
+                                .replaceAll('{times}', '${payments.length}')
                                 .replaceAll('{amount}',
-                                    CurrencyFormatter.format(totalCollectedAllTime)),
+                                    CurrencyFormatter.format(paidToBuilder)),
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
                           ),
@@ -252,8 +269,6 @@ class DashboardScreen extends StatelessWidget {
             );
           },
         );
-      },
-    );
   }
 
   Widget _memberStatusChip(BuildContext context, MemberMonthStatus status) {
