@@ -100,7 +100,7 @@ class S {
       'this_month': 'এই মাস',
       'months_complete': 'মাস সম্পূর্ণ',
       'installments_complete': 'কিস্তি সম্পূর্ণ',
-      'collected_summary': '{months} মাসে {times} বারে {amount} সংগৃহীত',
+      'collected_summary': '{months} মাস ধরে {times}টি পেমেন্টে মোট {amount} জমা পড়েছে',
       'months_partial': 'মাসে আংশিক জমা হয়েছে',
       'monthly_target': 'মাসিক লক্ষ্য',
       'export_pdf': 'PDF এক্সপোর্ট',
