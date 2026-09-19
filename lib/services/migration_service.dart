@@ -7,6 +7,7 @@ import '../models/builder_payment.dart';
 import '../models/contribution.dart';
 import '../models/group_member.dart';
 import '../models/land_group.dart';
+import '../utils/xlsx_reader.dart';
 import 'audit_service.dart';
 
 /// Which side of the ledger a spreadsheet row belongs to.
@@ -168,8 +169,11 @@ class MigrationService {
     required List<Contribution> existingContributions,
     required List<BuilderPayment> existingPayments,
   }) {
-    final excel = Excel.decodeBytes(bytes);
-    final sheet = excel.tables[excel.getDefaultSheet()] ?? excel.tables.values.first;
+    // Read through XlsxReader rather than the excel package: the file being
+    // imported was written by some other tool, and that is the whole point
+    // of an import — see lib/utils/xlsx_reader.dart for what it survives
+    // that the package's reader does not.
+    final sheet = XlsxReader.firstSheet(bytes);
     final rows = <MigrationRow>[];
 
     // Match on the name as typed, case- and space-insensitive, because
@@ -181,12 +185,11 @@ class MigrationService {
       if (name != null && name.trim().isNotEmpty) byKey[norm(name)] = m.uid;
     }
 
-    for (var i = 1; i < sheet.maxRows; i++) {
-      final cells = sheet.row(i);
-      String cell(int idx) {
-        if (idx >= cells.length) return '';
-        return cells[idx]?.value?.toString().trim() ?? '';
-      }
+    // Row 0 is the header; everything after it is data, and the index maps
+    // straight onto the spreadsheet's own row numbers for error messages.
+    for (var i = 1; i < sheet.rows.length; i++) {
+      final cells = sheet.rows[i];
+      String cell(int idx) => idx < cells.length ? cells[idx].trim() : '';
 
       final rawKind = cell(0);
       final rawMember = cell(1);
@@ -204,9 +207,9 @@ class MigrationService {
             error: message,
           );
 
-      final month = int.tryParse(cell(2));
-      final year = int.tryParse(cell(3));
-      final amount = double.tryParse(rawAmount.replaceAll(',', ''));
+      final month = _int(cell(2));
+      final year = _int(cell(3));
+      final amount = _number(rawAmount);
 
       if (month == null || month < 1 || month > 12) {
         rows.add(fail('মাস ১-১২ এর মধ্যে দিন'));
@@ -251,7 +254,7 @@ class MigrationService {
       } else {
         // Payments are dated to the day. A blank day is not an error — most
         // old ledgers only recorded the month — so it falls back to the 1st.
-        final day = int.tryParse(cell(4)) ?? 1;
+        final day = _int(cell(4)) ?? 1;
         if (day < 1 || day > 31) {
           rows.add(fail('দিন ১-৩১ এর মধ্যে দিন'));
           continue;
@@ -278,6 +281,31 @@ class MigrationService {
 
     return MigrationPreview(rows);
   }
+
+  /// Numbers as people actually type them: Bangla digits, thousands
+  /// separators, a stray currency symbol, or a spreadsheet's own "50000.0".
+  /// A sheet filled in by hand in Bangla should not fail on its own digits.
+  static const _bengaliDigits = '০১২৩৪৫৬৭৮৯';
+
+  static String _asciiDigits(String raw) {
+    final buffer = StringBuffer();
+    for (final rune in raw.runes) {
+      final char = String.fromCharCode(rune);
+      final index = _bengaliDigits.indexOf(char);
+      buffer.write(index >= 0 ? '$index' : char);
+    }
+    return buffer.toString();
+  }
+
+  static String _clean(String raw) =>
+      _asciiDigits(raw).replaceAll(',', '').replaceAll('৳', '').replaceAll(' ', '').trim();
+
+  static int? _int(String raw) {
+    final cleaned = _clean(raw);
+    return int.tryParse(cleaned) ?? double.tryParse(cleaned)?.round();
+  }
+
+  static double? _number(String raw) => double.tryParse(_clean(raw));
 
   /// A blank type column is forgiving rather than fatal: a row with a member
   /// named in it can only be an instalment, and one without can only be a

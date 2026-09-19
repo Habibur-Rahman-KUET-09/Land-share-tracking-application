@@ -76,6 +76,10 @@ dependencies:
   pdf: ^3.11.1
   printing: ^5.13.4
   excel: ^4.0.6
+  # Reading an .xlsx written by some other tool is done directly (see
+  # lib/utils/xlsx_reader.dart); both are already in the tree under excel.
+  archive: ^3.6.1
+  xml: ^6.5.0
   path_provider: ^2.1.5
   share_plus: ^10.1.2
 

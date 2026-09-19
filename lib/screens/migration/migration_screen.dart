@@ -18,6 +18,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/byte_share.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/group_type_labels.dart';
+import '../../utils/xlsx_reader.dart';
 import '../../widgets/kistify_app_bar.dart';
 import '../billing/upgrade_screen.dart';
 
@@ -123,8 +124,15 @@ class _MigrationScreenState extends State<MigrationScreen> {
         existingPayments: existingPayments,
       );
       if (mounted) setState(() => _preview = preview);
+    } on XlsxFormatException catch (e) {
+      // Already a sentence aimed at the person holding the file.
+      if (mounted) setState(() => _error = e.message);
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      // Anything else is a bug on our side, not something they can fix by
+      // editing a cell. Say what to do, and keep the detail for the report.
+      if (mounted) {
+        setState(() => _error = 'ফাইলটি পড়া গেল না। নমুনা ফরম্যাটে সেভ করে আবার চেষ্টা করুন।\n\n$e');
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
