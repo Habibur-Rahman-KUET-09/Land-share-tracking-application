@@ -136,7 +136,6 @@ class ExcelExportService {
     ]);
 
     final months = reportMonths(
-      group: group,
       contributions: approvedContributions,
       payments: builderPayments,
     );

@@ -232,7 +232,6 @@ class PdfExportService {
     );
 
     final months = reportMonths(
-      group: group,
       contributions: approvedContributions,
       payments: builderPayments,
     );
