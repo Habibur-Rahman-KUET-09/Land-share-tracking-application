@@ -42,10 +42,17 @@ class DashboardScreen extends StatelessWidget {
                 .where((c) => c.month == now.month && c.year == now.year)
                 .fold<double>(0, (sum, c) => sum + c.amount);
 
-            // মাসিক progress: কতগুলো মাসে পুরো গ্রুপের collection সম্পূর্ণ
-            // হয়েছে (approved total >= সেই মাসের প্রত্যাশিত মোট)।
+            // A month counts as complete when its approved collection reaches
+            // the group's monthly target. Months that collected something but
+            // not all of it are counted separately rather than ignored:
+            // migrated history is full of them — a group that paid ৳10,000 a
+            // month for years before raising it to ৳20,000 has every one of
+            // those older months fall short of today's target, and a card
+            // that silently drops 28 of a group's 35 months reads as broken.
             final monthsSeen = approved.map((c) => '${c.year}-${c.month}').toSet();
             var monthsCompleted = 0;
+            var monthsPartial = 0;
+            var partialTotal = 0.0;
             for (final key in monthsSeen) {
               final parts = key.split('-');
               final y = int.parse(parts[0]);
@@ -53,7 +60,12 @@ class DashboardScreen extends StatelessWidget {
               final sum = approved
                   .where((c) => c.month == m && c.year == y)
                   .fold<double>(0, (s, c) => s + c.amount);
-              if (sum >= group.monthlyTotalToBuilder - 0.5) monthsCompleted++;
+              if (sum >= group.monthlyTotalToBuilder - 0.5) {
+                monthsCompleted++;
+              } else {
+                monthsPartial++;
+                partialTotal += sum;
+              }
             }
 
             // A lottery has no end figure to progress towards, and a savings
@@ -129,10 +141,25 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        '$monthsCompleted / $totalMonths মাস সম্পূর্ণ',
+                        '$monthsCompleted / $totalMonths ${S.t(context, 'months_complete')}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(fontSize: 14, color: AppColors.heading),
                       ),
+                      if (monthsPartial > 0) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          '$monthsPartial ${S.t(context, 'months_partial')} · '
+                          '${CurrencyFormatter.format(partialTotal)}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
+                        ),
+                        Text(
+                          '${S.t(context, 'monthly_target')} '
+                          '${CurrencyFormatter.format(group.monthlyTotalToBuilder)}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 11.5, color: AppColors.mutedText),
+                        ),
+                      ],
                     ],
                   ),
                 ),
