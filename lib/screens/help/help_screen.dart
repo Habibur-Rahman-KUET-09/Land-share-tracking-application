@@ -122,15 +122,18 @@ const _sections = <_Section>[
     'কে কী করতে পারে',
     'Who can do what',
     'Creator — সব কিছু: পরিকল্পনা বদলানো, সদস্য যোগ/বাদ, ভূমিকা বদলানো, গ্রুপ মুছে ফেলা।\n'
-        'Admin — এন্ট্রি অনুমোদন/প্রত্যাখ্যান, অনুমোদিত এন্ট্রি বাতিল, রিপোর্ট ও লগ দেখা।\n'
+        'Admin — এন্ট্রি অনুমোদন/প্রত্যাখ্যান, রিপোর্ট ও লগ দেখা।\n'
         'Collector — এন্ট্রি অনুমোদন/প্রত্যাখ্যান, বিল্ডার/ব্যাংকে জমার এন্ট্রি।\n'
         'Member — নিজের কিস্তির এন্ট্রি দেওয়া, সবার হিসাব দেখা।\n\n'
-        'একজন Creator-ই থাকেন, এবং কেউ নিজের ভূমিকা নিজে বদলাতে পারেন না।',
+        'একজন Creator-ই থাকেন, এবং কেউ নিজের ভূমিকা নিজে বদলাতে পারেন না।\n\n'
+        'অনুমোদিত এন্ট্রি বাতিল করতে পারেন শুধু Creator — এবং বিল্ডারে টাকা পাঠানোর পর তিনিও পারেন না।',
     'Creator — everything: edit the plan, add or remove members, change roles, delete the group.\n'
-        'Admin — approve or reject entries, cancel an approved one, see reports and the log.\n'
+        'Admin — approve or reject entries, see reports and the log.\n'
         'Collector — approve or reject entries, record payments out to the builder or bank.\n'
         'Member — record their own instalments and see the shared accounts.\n\n'
-        'There is exactly one Creator, and nobody can change their own role.',
+        'There is exactly one Creator, and nobody can change their own role.\n\n'
+        'Only the Creator can void an approved entry — and once the money has gone to the '
+        'builder, not even they can.',
   ),
   _Section(
     Icons.verified_outlined,
@@ -188,12 +191,17 @@ const _sections = <_Section>[
     'আপনার গ্রুপের হিসাব শুধু আপনার গ্রুপের সদস্যরাই দেখতে পান।\n\n'
         'প্রতিটি কাজ — কে এন্ট্রি দিল, কে অনুমোদন করল, কে বাতিল করল — অ্যাক্টিভিটি লগে '
         'লেখা থাকে এবং মোছা যায় না।\n\n'
-        'অনুমোদিত এন্ট্রি ভুল হলে Admin সেটি কারণসহ বাতিল করতে পারেন; এন্ট্রি মুছে যায় না, '
-        'বাতিল হিসেবে থেকে যায়।',
+        'অনুমোদিত এন্ট্রি ভুল হলে Creator সেটি কারণসহ বাতিল করতে পারেন; এন্ট্রি মুছে যায় না, '
+        'বাতিল হিসেবে থেকে যায়।\n\n'
+        'তবে ওই মাসের টাকা বিল্ডারে পাঠানো হয়ে গেলে আর বাতিল করা যায় না — Creator-ও পারেন না। '
+        'টাকা চলে গেছে, তাই হিসাবও আর পেছনে ফেরে না; ভুল হলে পরের মাসে সমন্বয় করতে হয়।',
     "Your group's records are visible to your group's members and nobody else.\n\n"
         'Every action — who filed an entry, who approved it, who cancelled it — is written to '
         'the activity log and cannot be erased.\n\n'
-        'If an approved entry turns out to be wrong, an Admin cancels it with a reason. It is '
-        'never deleted; it stays on the record as cancelled.',
+        'If an approved entry turns out to be wrong, the Creator cancels it with a reason. It '
+        'is never deleted; it stays on the record as cancelled.\n\n'
+        'Once that month\'s money has gone to the builder, not even the Creator can void it. '
+        'The money has left; the record follows it. A mistake found afterwards is settled in '
+        'the following month.',
   ),
 ];

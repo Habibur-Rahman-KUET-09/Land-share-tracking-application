@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../models/builder_payment.dart';
 import '../../models/contribution.dart';
 import '../../models/group_member.dart';
 import '../../models/land_group.dart';
+import '../../services/builder_payment_service.dart';
 import '../../services/contribution_service.dart';
 import '../../services/group_service.dart';
 import '../../services/storage_service.dart';
@@ -177,8 +179,44 @@ class _MyContributions extends StatelessWidget {
     this.showEveryone = false,
   });
 
+  /// A month's approved entries stop being voidable once the group's money
+  /// has moved on to the builder. Not even the Creator can reach back past
+  /// that line: the builder ledger already counts that money, and quietly
+  /// removing a contribution behind it leaves the two sides disagreeing
+  /// with no trace of why.
+  ///
+  /// "Moved on" is read as: any builder payment dated on or after the first
+  /// of that month. A payment in a later month covers earlier collections
+  /// too — money is fungible, and groups here routinely hand over a few
+  /// months at once.
+  ///
+  /// This lives in the UI because security rules cannot ask whether such a
+  /// payment exists; they read documents by path and never query. What the
+  /// rules do enforce is the half that matters most — only the Creator may
+  /// cancel at all.
+  static bool _lockedByPayment(Contribution c, DateTime? lastPaymentDate) {
+    if (lastPaymentDate == null) return false;
+    return !lastPaymentDate.isBefore(DateTime(c.year, c.month));
+  }
+
   @override
   Widget build(BuildContext context) {
+    return StreamBuilder<List<BuilderPayment>>(
+      stream: BuilderPaymentService().watch(group.id),
+      builder: (context, paymentSnap) {
+        final payments = paymentSnap.data ?? const <BuilderPayment>[];
+        DateTime? lastPaymentDate;
+        for (final p in payments) {
+          if (lastPaymentDate == null || p.date.isAfter(lastPaymentDate)) {
+            lastPaymentDate = p.date;
+          }
+        }
+        return _buildList(context, lastPaymentDate);
+      },
+    );
+  }
+
+  Widget _buildList(BuildContext context, DateTime? lastPaymentDate) {
     return StreamBuilder<List<Contribution>>(
       stream: showEveryone
           ? ContributionService().watchGroupContributions(group.id)
@@ -222,7 +260,19 @@ class _MyContributions extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _StatusChipFor(status: c.status, rejectReason: c.rejectReason, cancelReason: c.cancelReason),
-                    if (canCancel && c.status == ContributionStatus.approved)
+                    if (canCancel &&
+                        c.status == ContributionStatus.approved &&
+                        _lockedByPayment(c, lastPaymentDate))
+                      IconButton(
+                        icon: const Icon(Icons.lock_outline, color: AppColors.mutedText),
+                        tooltip: S.t(context, 'cancel_locked'),
+                        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(S.t(context, 'cancel_locked'))),
+                        ),
+                      ),
+                    if (canCancel &&
+                        c.status == ContributionStatus.approved &&
+                        !_lockedByPayment(c, lastPaymentDate))
                       IconButton(
                         icon: const Icon(Icons.cancel_outlined),
                         tooltip: S.t(context, 'cancel_entry'),

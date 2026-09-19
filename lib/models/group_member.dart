@@ -80,8 +80,15 @@ class GroupMember {
   /// Approve/reject a pending entry.
   bool get canApproveOrRejectContribution => isCreator || isAdmin || isCollector;
 
-  /// Void an already-approved entry back out.
-  bool get canCancelApprovedContribution => isCreator || isAdmin;
+  /// Void an already-approved entry back out. Creator only: approving is a
+  /// shared duty, undoing one is not — an approved entry is money the group
+  /// has agreed on, and anyone who can quietly take it back out is a hole in
+  /// the ledger. An Admin who finds a mistake asks the Creator.
+  ///
+  /// It stops being possible for anyone, Creator included, once the money
+  /// for that month has gone to the builder — see
+  /// `lib/screens/contribution/contributions_tab.dart`.
+  bool get canCancelApprovedContribution => isCreator;
 
   /// Hold a month's lottery draw in a [GroupType.lottery] group. Same
   /// creator/admin bar firestore.rules puts on the lotteryDraws collection.

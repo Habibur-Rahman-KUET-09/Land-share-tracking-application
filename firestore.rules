@@ -47,7 +47,10 @@ service cloud.firestore {
     }
 
     // Cancel an already-approved entry; view the audit log.
-    function isGroupCanceller(groupId) {
+    // Creator or Admin. Cancelling an approved entry is NOT one of these
+    // any more (that is Creator-only, inline below) — this now covers the
+    // bulk-import branch, which both may run.
+    function isGroupManager(groupId) {
       return isSignedIn() && myRole(groupId) in ['creator', 'admin'];
     }
 
@@ -68,7 +71,7 @@ service cloud.firestore {
     // profile email from that group's Members tab (there's no self-service
     // profile editor). [groupId] here is a value the *write itself*
     // supplies (see isGroupManagerEditingMember below) — not a path
-    // segment — so it can't reuse myRole()/isGroupCanceller() above, which
+    // segment — so it can't reuse myRole()/isGroupManager() above, which
     // read it out of the match block's own {groupId}.
     function isGroupManagerEditingUser(groupId, targetUid) {
       return isSignedIn() && groupId != null &&
@@ -216,7 +219,7 @@ service cloud.firestore {
           // field is what lets the ledger tell a receipt-checked approval
           // from a bulk one, and requiring it here means an ordinary entry
           // can never be smuggled in through this branch.
-          (isGroupCanceller(groupId) &&
+          (isGroupManager(groupId) &&
             request.resource.data.submittedBy == request.auth.uid &&
             request.resource.data.approvedBy == request.auth.uid &&
             request.resource.data.status == 'approved' &&
@@ -230,8 +233,17 @@ service cloud.firestore {
             resource.data.submittedBy != request.auth.uid &&
             resource.data.memberId != request.auth.uid &&
             request.resource.data.status in ['approved', 'rejected']) ||
-          // Cancel: an Admin/Creator voiding an entry that was approved.
-          (isGroupCanceller(groupId) &&
+          // Cancel: the Creator, and only the Creator, voiding an entry
+          // that was approved. Approving is shared with Admins and
+          // Collectors; undoing an approval is not, because an approved
+          // entry is money the whole group has agreed on.
+          //
+          // The app additionally refuses this once that month's money has
+          // reached the builder, which these rules cannot check: it needs
+          // to know whether any builder payment exists at or after that
+          // month, and rules can read a document they are handed a path
+          // to, never query a collection for one.
+          (isGroupCreator(groupId) &&
             resource.data.status == 'approved' &&
             request.resource.data.status == 'cancelled')
         );
@@ -261,7 +273,7 @@ service cloud.firestore {
       // real one. A wrong draw has to be deleted (Creator) and redone.
       match /lotteryDraws/{drawId} {
         allow read: if isGroupMember(groupId);
-        allow create: if isGroupCanceller(groupId) &&
+        allow create: if isGroupManager(groupId) &&
           request.resource.data.drawnBy == request.auth.uid &&
           request.resource.data.winnerUid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
         allow update: if false;
@@ -270,7 +282,7 @@ service cloud.firestore {
 
       match /auditLog/{logId} {
         // Admin/Creator only, per the role restructure.
-        allow read: if isGroupCanceller(groupId);
+        allow read: if isGroupManager(groupId);
         // Append-only, and the actor must be the writer themselves — every
         // service method logs as request.auth.uid right after its own
         // guarded write, so this never blocks a legitimate action.
