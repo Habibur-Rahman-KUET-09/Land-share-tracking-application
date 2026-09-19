@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kistify — ইনস্টল করুন / Install</title>
+  <meta name="theme-color" content="#0F6E5C">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    :root {
+      --teal: #0F6E5C;
+      --navy: #1B2A4A;
+      --gold: #E5B347;
+      --body: #333;
+      --muted: #666;
+      --line: #E3E6E5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--body);
+      line-height: 1.75;
+      background: #F4F6F5;
+    }
+    header { background: var(--teal); color: #fff; padding: 32px 20px; }
+    header div { max-width: 780px; margin: 0 auto; }
+    header h1 { margin: 0 0 4px; font-size: 22px; }
+    header p { margin: 0; opacity: 0.85; font-size: 14px; }
+    main { max-width: 780px; margin: 0 auto; padding: 28px 20px 64px; }
+    section {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px 22px;
+      margin-bottom: 16px;
+    }
+    section.primary { border-color: var(--teal); border-width: 1.5px; }
+    h2 { color: var(--navy); font-size: 17px; margin: 0 0 10px; }
+    .tag {
+      display: inline-block;
+      background: rgba(15, 110, 92, 0.1);
+      color: var(--teal);
+      font-size: 12px;
+      border-radius: 20px;
+      padding: 2px 10px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    ol, ul { padding-left: 20px; margin: 8px 0; }
+    li { margin-bottom: 6px; }
+    .btn {
+      display: inline-block;
+      background: var(--teal);
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-weight: 600;
+      margin: 10px 0 4px;
+    }
+    .btn.ghost { background: #fff; color: var(--teal); border: 1.5px solid var(--teal); }
+    .en { color: var(--muted); font-size: 14.5px; }
+    .note { font-size: 13.5px; color: var(--muted); }
+    a { color: var(--teal); }
+    footer { text-align: center; font-size: 13px; color: var(--muted); padding-bottom: 40px; }
+    @media (max-width: 520px) { section { padding: 16px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Kistify ইনস্টল করুন</h1>
+      <p>দুইভাবে চালানো যায় — যেটা সুবিধা, সেটা নিন</p>
+    </div>
+  </header>
+  <main>
+
+    <section class="primary">
+      <h2>১. ওয়েব অ্যাপ <span class="tag">কিছু নামাতে হবে না</span></h2>
+      <p>ফোনের ব্রাউজারে <a href="/">kistify.web.app</a> খুলুন, তারপর হোম স্ক্রিনে যোগ করে নিন — এরপর থেকে সাধারণ অ্যাপের মতোই খুলবে, আলাদা আইকন থাকবে।</p>
+      <ul>
+        <li><strong>অ্যান্ড্রয়েড (Chrome):</strong> ওপরের ডানে তিন ডট ⋮ → “Add to Home screen” / “হোম স্ক্রিনে যোগ করুন”</li>
+        <li><strong>আইফোন (Safari):</strong> নিচের শেয়ার বোতাম → “Add to Home Screen”</li>
+      </ul>
+      <a class="btn" href="/">অ্যাপ খুলুন</a>
+      <p class="note">আপডেট নিজে থেকেই আসে — নতুন কিছু নামাতে হয় না। আইফোনে এটাই একমাত্র উপায়।</p>
+      <p class="en">Open the site, add it to your home screen, and it behaves like an installed app. Updates arrive on their own. On iPhone this is the only option.</p>
+    </section>
+
+    <section>
+      <h2>২. অ্যান্ড্রয়েড APK <span class="tag">সরাসরি ইনস্টল</span></h2>
+      <p>ফোনে সত্যিকারের অ্যাপ হিসেবে বসবে। Play Store-এ ওঠার আগ পর্যন্ত এভাবেই দেওয়া হচ্ছে।</p>
+      <a class="btn" href="https://github.com/Habibur-Rahman-KUET-09/Land-share-tracking-application/releases/latest/download/app-release.apk">সর্বশেষ APK নামান</a>
+      <ol>
+        <li>ফাইলটি নামান, তারপর খুলুন।</li>
+        <li>ফোন জিজ্ঞেস করবে “এই উৎস থেকে ইনস্টল করার অনুমতি দিন” — অনুমতি দিন। Play Store-এর বাইরের যেকোনো অ্যাপের ক্ষেত্রেই অ্যান্ড্রয়েড এটা জিজ্ঞেস করে।</li>
+        <li>ইনস্টল করুন, তারপর Google বা ইমেইল দিয়ে লগইন করুন।</li>
+      </ol>
+      <p class="note"><strong>মনে রাখবেন:</strong> এভাবে ইনস্টল করলে আপডেট নিজে থেকে আসবে না। নতুন ভার্সন এলে এই পেজ থেকে আবার নামিয়ে ইনস্টল করলেই হবে — ডেটা মুছবে না, কারণ সব ডেটা আপনার অ্যাকাউন্টে অনলাইনে থাকে।</p>
+      <p class="en">A real Android install. Android will ask you to allow installing from this source — that is normal for anything outside Play. Updates are not automatic: come back here for a new build. Your data lives in your account, not in the app, so reinstalling loses nothing.</p>
+    </section>
+
+    <section>
+      <h2>কোনটা নেব?</h2>
+      <ul>
+        <li><strong>আইফোন</strong> — ওয়েব অ্যাপ (১ নম্বর), অন্য উপায় নেই।</li>
+        <li><strong>অ্যান্ড্রয়েড, ঝামেলাহীন</strong> — ওয়েব অ্যাপ; আপডেট নিয়ে ভাবতে হবে না।</li>
+        <li><strong>অ্যান্ড্রয়েড, পুশ নোটিফিকেশন দরকার</strong> — APK। অ্যাপ বন্ধ থাকা অবস্থায় ফোনে নোটিফিকেশন আসা শুধু APK-তে কাজ করে; ওয়েবে অ্যাপের ভেতরের নোটিফিকেশন ঘণ্টাটা ঠিকই চলে, কিন্তু ফোনের নোটিফিকেশন বারে কিছু আসে না।</li>
+      </ul>
+      <p class="note">দুটোতেই একই অ্যাকাউন্ট, একই ডেটা। আজ ওয়েবে ঢুকে কাল APK দিয়ে ঢুকলেও সব আগের মতোই পাবেন।</p>
+    </section>
+
+    <footer>
+      Kistify ·
+      <a href="/sop">ব্যবহারের নিয়ম</a> ·
+      <a href="/privacy">প্রাইভেসি</a> ·
+      <a href="mailto:veryfew.2018@gmail.com">যোগাযোগ</a>
+    </footer>
+  </main>
+</body>
+</html>

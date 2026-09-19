@@ -21,6 +21,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Needed to publish the rolling "latest" release at the end.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -64,6 +67,11 @@ jobs:
       # from the last several years).
       - run: flutter build apk --release --split-per-abi
 
+      # A single universal APK as well, for handing to people directly:
+      # one link, no "which of these three files is mine". Bigger than a
+      # per-ABI APK, but nobody can pick the wrong one.
+      - run: flutter build apk --release
+
       # What gets uploaded to Play Console. Play re-signs it with its own
       # key and generates the per-device APKs itself.
       - run: flutter build appbundle --release
@@ -90,3 +98,30 @@ jobs:
           name: play-store-bundle-aab-upload-only
           path: build/app/outputs/bundle/release/*.aab
           retention-days: 30
+
+      # A permanent, login-free download link, which an Actions artifact is
+      # not: artifacts need a GitHub account and expire. kistify.web.app's
+      # /download page points at this URL, so whoever we send it to always
+      # gets the current build:
+      #
+      #   .../releases/latest/download/app-release.apk
+      #
+      # The release is deleted and recreated rather than just re-uploaded
+      # so that its tag actually points at the commit it was built from.
+      # The link is briefly dead while this runs, which is a fair trade for
+      # a tag that never lies. Only signed builds are published — an
+      # unsigned one would install for nobody who already has this app.
+      - name: Publish the installable APK as the "latest" release
+        if: steps.signing.outputs.signed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="ইনস্টল করার নিয়ম / how to install: https://kistify.web.app/download"
+          NOTES="$NOTES — built from ${GITHUB_SHA:0:7} on $(date -u '+%Y-%m-%d %H:%M UTC')."
+          NOTES="$NOTES Android only; iPhone and everything else: https://kistify.web.app"
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest \
+            --target "$GITHUB_SHA" \
+            --title "সর্বশেষ বিল্ড — Latest build" \
+            --notes "$NOTES" \
+            build/app/outputs/flutter-apk/app-release.apk
