@@ -111,6 +111,15 @@ jobs:
       # The link is briefly dead while this runs, which is a fair trade for
       # a tag that never lies. Only signed builds are published — an
       # unsigned one would install for nobody who already has this app.
+      # The .aab rides along under a name that says what it is for. It is
+      # not installable anywhere — only Play opens it — but having it on a
+      # plain HTTPS link means the Play upload can be done from a tablet or
+      # a borrowed machine, without a GitHub login and without unzipping an
+      # Actions artifact first.
+      - name: Name the bundle after its one use
+        if: steps.signing.outputs.signed == 'true'
+        run: cp build/app/outputs/bundle/release/app-release.aab play-upload-only.aab
+
       - name: Publish the installable APK as the "latest" release
         if: steps.signing.outputs.signed == 'true'
         env:
@@ -118,10 +127,12 @@ jobs:
         run: |
           NOTES="ইনস্টল করার নিয়ম / how to install: https://kistify.web.app/download"
           NOTES="$NOTES — built from ${GITHUB_SHA:0:7} on $(date -u '+%Y-%m-%d %H:%M UTC')."
-          NOTES="$NOTES Android only; iPhone and everything else: https://kistify.web.app"
+          NOTES="$NOTES Android only; iPhone, iPad and everything else: https://kistify.web.app"
+          NOTES="$NOTES play-upload-only.aab is for the Play Console and installs on nothing."
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest \
             --target "$GITHUB_SHA" \
             --title "সর্বশেষ বিল্ড — Latest build" \
             --notes "$NOTES" \
-            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-release.apk \
+            play-upload-only.aab
