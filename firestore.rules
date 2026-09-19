@@ -102,6 +102,12 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.auth.uid == uid;
       allow update: if isSignedIn() &&
         (request.auth.uid == uid || isGroupManagerEditingMember(uid));
+      // Stays closed even though users can now delete their own accounts:
+      // that runs as the deleteAccount Cloud Function, which uses the
+      // Admin SDK and bypasses these rules. Deleting the profile is the
+      // smallest part of it — memberships have to be closed out and the
+      // Auth user removed in the same operation, and a client that could
+      // delete this doc on its own would just orphan the rest.
       allow delete: if false;
 
       match /fcmTokens/{tokenId} {

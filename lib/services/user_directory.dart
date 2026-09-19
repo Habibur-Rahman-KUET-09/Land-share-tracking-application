@@ -29,12 +29,22 @@ class UserDirectory {
     });
   }
 
-  /// The uid itself is a deliberate fallback rather than a blank or a
-  /// placeholder: it's ugly, but it identifies *someone*, and a silently
-  /// empty name in a money ledger is worse than an ugly one.
+  /// A name for a profile that is no longer there.
+  ///
+  /// This is what every ledger row, approval and audit entry shows once
+  /// someone deletes their account: the records stay (they are the whole
+  /// group's, not just theirs), but the person behind them is gone. The
+  /// last six characters of the uid come along because two people can
+  /// leave the same group, and "মুছে ফেলা অ্যাকাউন্ট" twice in one table
+  /// tells nobody which row was whose.
+  static String deletedLabel(String uid) =>
+      'মুছে ফেলা অ্যাকাউন্ট (${uid.length <= 6 ? uid : uid.substring(uid.length - 6)})';
+
   Future<String> name(String uid, {FirebaseFirestore? db}) async {
     final u = await user(uid, db: db);
-    return u?.name ?? uid;
+    final name = u?.name;
+    if (name != null && name.isNotEmpty) return name;
+    return deletedLabel(uid);
   }
 
   /// Drops a cached entry after its profile changed, so the next read is

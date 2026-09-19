@@ -12,8 +12,9 @@ not a paperwork slip.
 **Is all of the user data collected by your app encrypted in transit?** Yes
 (everything goes to Firebase over TLS).
 **Do you provide a way for users to request that their data be deleted?**
-Yes — see the account deletion item in `release-checklist.md`, which must
-be built before this answer is true.
+Yes. In-app: Account → "অ্যাকাউন্ট মুছে ফেলুন". On the web, for people who
+have uninstalled: https://kistify.web.app/delete-account (the URL to give
+Play for the deletion request link).
 
 | Data type | Collected | Shared | Required | Purpose |
 |---|---|---|---|---|

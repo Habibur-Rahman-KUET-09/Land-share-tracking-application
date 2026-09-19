@@ -25,6 +25,7 @@
 // require the project to be on the Blaze (pay-as-you-go) plan; the free
 // Spark plan can still deploy the on-write triggers below.
 const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
 
@@ -305,4 +306,152 @@ exports.dailyReminders = onSchedule('every day 09:00', async () => {
       );
     }
   }
+});
+
+// ---------------------------------------------------------------------
+// Account deletion and creator hand-over
+//
+// Both run here rather than in the app because both need writes the
+// client is not allowed to make: deleting a Firebase Auth user, and
+// changing two member docs plus the group doc as one unit. The Admin SDK
+// bypasses firestore.rules, so `users/{uid}` can stay undeletable by
+// clients (it is) while still being deletable by its owner through this.
+// ---------------------------------------------------------------------
+
+/**
+ * Hands the creator role to another active member of the same group.
+ *
+ * Needed on its own (a creator who stops running the সমিতি should be able
+ * to pass it on), and needed by deleteAccount: a creator cannot delete
+ * their account while a group of theirs still has other people in it, and
+ * this is the way out that does not destroy everyone's records.
+ */
+exports.transferCreator = onCall(async (request) => {
+  const actorUid = request.auth && request.auth.uid;
+  if (!actorUid) throw new HttpsError('unauthenticated', 'Sign in first.');
+
+  const { groupId, newCreatorUid } = request.data || {};
+  if (typeof groupId !== 'string' || typeof newCreatorUid !== 'string' || !groupId || !newCreatorUid) {
+    throw new HttpsError('invalid-argument', 'groupId and newCreatorUid are required.');
+  }
+  if (newCreatorUid === actorUid) {
+    throw new HttpsError('invalid-argument', 'আপনি নিজেই Creator।');
+  }
+
+  const groupRef = db.collection('groups').doc(groupId);
+  const groupSnap = await groupRef.get();
+  if (!groupSnap.exists) throw new HttpsError('not-found', 'গ্রুপটি পাওয়া যায়নি।');
+  if (groupSnap.data().createdBy !== actorUid) {
+    throw new HttpsError('permission-denied', 'শুধু Creator এই দায়িত্ব হস্তান্তর করতে পারেন।');
+  }
+
+  const targetRef = groupRef.collection('members').doc(newCreatorUid);
+  const targetSnap = await targetRef.get();
+  if (!targetSnap.exists || targetSnap.data().status === 'exited') {
+    throw new HttpsError('failed-precondition', 'যাকে দিতে চান তিনি এই গ্রুপের সক্রিয় সদস্য নন।');
+  }
+
+  const batch = db.batch();
+  // createdBy is what firestore.rules reads for every creator-only check,
+  // so it moves in the same commit as the roles — a window where the two
+  // disagree is a window where nobody can manage the group.
+  batch.update(groupRef, { createdBy: newCreatorUid });
+  batch.update(targetRef, { role: 'creator' });
+  batch.update(groupRef.collection('members').doc(actorUid), { role: 'admin' });
+  batch.set(groupRef.collection('auditLog').doc(), {
+    actorId: actorUid,
+    action: 'transfer_creator',
+    targetType: 'member',
+    targetId: newCreatorUid,
+    details: 'Creator-এর দায়িত্ব হস্তান্তর করা হয়েছে',
+    timestamp: admin.firestore.Timestamp.now(),
+  });
+  await batch.commit();
+
+  await notifyUser(newCreatorUid, {
+    title: 'আপনি এখন Creator',
+    body: `${groupSnap.data().name} — গ্রুপটির পূর্ণ দায়িত্ব আপনাকে দেওয়া হয়েছে।`,
+    type: 'creator_transferred',
+    groupId,
+  });
+
+  return { ok: true };
+});
+
+/**
+ * Deletes the caller's account: their profile, their push tokens, their
+ * notification inbox, their memberships, and their Firebase Auth user.
+ *
+ * What it deliberately does NOT delete is the money. A group's
+ * contributions, builder payments and audit log are the other members'
+ * records as much as this person's — someone leaving cannot erase the
+ * history of what a group collected. Their membership is marked exited
+ * and their uid drops out of memberIds; anywhere their name used to
+ * resolve now reads "মুছে ফেলা অ্যাকাউন্ট" (see lib/services/user_directory.dart).
+ *
+ * A group they created and still share with others blocks the deletion,
+ * with the group names returned so the app can say which. They either
+ * hand it over (transferCreator) or delete it. A group where they are the
+ * last member left is deleted outright — nobody else is waiting on it.
+ *
+ * Receipt images in Cloud Storage are not touched: they belong to the
+ * group's entries, which survive. A deleted group's images do outlive it
+ * as orphans — true before this function existed too, and a storage
+ * lifecycle rule is the right fix rather than a best-effort loop here.
+ */
+exports.deleteAccount = onCall(async (request) => {
+  const uid = request.auth && request.auth.uid;
+  if (!uid) throw new HttpsError('unauthenticated', 'Sign in first.');
+
+  const groups = await db.collection('groups').where('memberIds', 'array-contains', uid).get();
+
+  // Check everything before changing anything: a deletion that half
+  // happened would leave an account that cannot be used or removed.
+  const blocking = groups.docs
+    .filter((doc) => {
+      const data = doc.data();
+      const others = (data.memberIds || []).filter((id) => id !== uid);
+      return data.createdBy === uid && others.length > 0;
+    })
+    .map((doc) => doc.data().name || doc.id);
+
+  if (blocking.length > 0) {
+    throw new HttpsError(
+      'failed-precondition',
+      'আপনি যে গ্রুপগুলোর Creator, সেখানে অন্য সদস্য আছেন। আগে দায়িত্ব হস্তান্তর করুন অথবা গ্রুপটি মুছে ফেলুন।',
+      { groups: blocking },
+    );
+  }
+
+  for (const doc of groups.docs) {
+    const data = doc.data();
+    if (data.createdBy === uid) {
+      // Sole member of their own group — it goes with them.
+      await db.recursiveDelete(doc.ref);
+      continue;
+    }
+    await doc.ref.collection('members').doc(uid).set(
+      { status: 'exited', exitedAt: admin.firestore.Timestamp.now() },
+      { merge: true },
+    );
+    await doc.ref.update({ memberIds: admin.firestore.FieldValue.arrayRemove(uid) });
+    // The remaining members deserve to know why a name in their ledger
+    // just changed, and the audit log is where they look.
+    await doc.ref.collection('auditLog').add({
+      actorId: uid,
+      action: 'delete_account',
+      targetType: 'member',
+      targetId: uid,
+      details: 'সদস্য নিজের অ্যাকাউন্ট মুছে ফেলেছেন',
+      timestamp: admin.firestore.Timestamp.now(),
+    });
+  }
+
+  // Profile, fcmTokens and the notification inbox in one go.
+  await db.recursiveDelete(db.collection('users').doc(uid));
+
+  // Last, because everything above needs the caller to still exist.
+  await admin.auth().deleteUser(uid);
+
+  return { ok: true };
 });

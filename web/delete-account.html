@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kistify — অ্যাকাউন্ট মুছে ফেলা / Delete your account</title>
+  <meta name="theme-color" content="#0F6E5C">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    :root { --teal: #0F6E5C; --navy: #1B2A4A; --body: #333; --muted: #666; --line: #E3E6E5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--body); line-height: 1.75; background: #F4F6F5; }
+    header { background: var(--teal); color: #fff; padding: 32px 20px; }
+    header div { max-width: 780px; margin: 0 auto; }
+    header h1 { margin: 0 0 4px; font-size: 22px; }
+    header p { margin: 0; opacity: 0.85; font-size: 14px; }
+    main { max-width: 780px; margin: 0 auto; padding: 28px 20px 64px; }
+    section { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; }
+    h2 { color: var(--navy); font-size: 17px; margin: 0 0 10px; }
+    ol, ul { padding-left: 20px; margin: 8px 0; }
+    li { margin-bottom: 6px; }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 8px; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: #F7F9F8; color: var(--navy); }
+    .en { color: var(--muted); font-size: 14.5px; }
+    a { color: var(--teal); }
+    footer { text-align: center; font-size: 13px; color: var(--muted); padding-bottom: 40px; }
+    @media (max-width: 520px) { section { padding: 16px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>অ্যাকাউন্ট মুছে ফেলা</h1>
+      <p>Delete your Kistify account · সর্বশেষ হালনাগাদ / Last updated: ১৯ সেপ্টেম্বর ২০২৬</p>
+    </div>
+  </header>
+  <main>
+
+    <section>
+      <h2>অ্যাপ থেকে নিজেই মুছতে পারবেন</h2>
+      <ol>
+        <li>Kistify খুলুন (ফোনের অ্যাপ বা <a href="/">kistify.web.app</a>)।</li>
+        <li>উপরের ডানে <strong>আমার অ্যাকাউন্ট</strong> আইকনে চাপ দিন।</li>
+        <li>নিচে <strong>“অ্যাকাউন্ট মুছে ফেলুন”</strong>।</li>
+        <li>পাসওয়ার্ড দিয়ে (বা Google দিয়ে আবার লগইন করে) নিশ্চিত করুন।</li>
+      </ol>
+      <p class="en">Open Kistify → My Account → Delete my account, then confirm with your password (or by signing in with Google again).</p>
+    </section>
+
+    <section>
+      <h2>কী মুছে যায়, কী থেকে যায়</h2>
+      <table>
+        <tr><th>মুছে যায়</th><th>থেকে যায়</th></tr>
+        <tr>
+          <td>
+            আপনার নাম, ইমেইল, ফোন নম্বর<br>
+            আপনার লগইন (Firebase Authentication)<br>
+            আপনার নোটিফিকেশন ও ডিভাইস টোকেন<br>
+            আপনি একাই আছেন এমন গ্রুপ, পুরোটা
+          </td>
+          <td>
+            যে গ্রুপে আরও সদস্য আছেন, সেখানকার কিস্তি, বিল্ডার পেমেন্ট ও অ্যাক্টিভিটি লগ
+          </td>
+        </tr>
+      </table>
+      <p>গ্রুপের হিসাব পুরো গ্রুপের সম্পত্তি — একজন চলে গেলে বাকিদের হিসাব মুছে যেতে পারে না। ওই রেকর্ডগুলোতে আপনার নামের জায়গায় এরপর থেকে <strong>“মুছে ফেলা অ্যাকাউন্ট”</strong> দেখাবে, আর আপনার সদস্যপদ “বের হয়ে গেছেন” হিসেবে চিহ্নিত হবে।</p>
+      <p class="en">Records in a group you shared with others stay, because they are that group's accounts, not only yours. Your name in them becomes “deleted account”.</p>
+    </section>
+
+    <section>
+      <h2>আপনি কোনো গ্রুপের Creator হলে</h2>
+      <p>যে গ্রুপে আপনি Creator এবং অন্য সদস্যও আছেন, সেটি আগে সামলাতে হবে — নইলে গ্রুপটি মালিকবিহীন হয়ে যেত। দুটি উপায়:</p>
+      <ul>
+        <li><strong>দায়িত্ব হস্তান্তর:</strong> গ্রুপ → ব্যবস্থাপনা → “Creator হস্তান্তর” → একজন সদস্য বেছে নিন।</li>
+        <li><strong>গ্রুপটি মুছে ফেলুন:</strong> গ্রুপ → ব্যবস্থাপনা → “গ্রুপ মুছে ফেলুন” (সব হিসাবসহ মুছে যাবে)।</li>
+      </ul>
+      <p class="en">If you are the Creator of a group that still has other members, hand it over or delete it first — the app will tell you which groups are in the way.</p>
+    </section>
+
+    <section>
+      <h2>অ্যাপ আনইনস্টল করে ফেলেছেন?</h2>
+      <p>লগইন করতে না পারলে আমাদের লিখুন — যে ইমেইল দিয়ে অ্যাকাউন্ট খুলেছিলেন সেই ঠিকানা থেকে পাঠালে পরিচয় যাচাই করে মুছে দেওয়া হবে।</p>
+      <p><a href="mailto:veryfew.2018@gmail.com?subject=Delete%20my%20Kistify%20account">veryfew.2018@gmail.com</a> — সাধারণত ৭ কর্মদিবসের মধ্যে।</p>
+      <p class="en">If you can no longer sign in, email us from the address the account was created with and we will delete it, normally within 7 working days.</p>
+    </section>
+
+    <footer>
+      Kistify ·
+      <a href="/privacy">প্রাইভেসি</a> ·
+      <a href="/sop">ব্যবহারের নিয়ম</a> ·
+      <a href="/download">ইনস্টল</a>
+    </footer>
+  </main>
+</body>
+</html>

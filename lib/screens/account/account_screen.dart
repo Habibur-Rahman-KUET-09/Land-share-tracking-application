@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../services/account_service.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/password_policy.dart';
@@ -121,6 +122,26 @@ class AccountScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+          Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                foregroundColor: Theme.of(context).colorScheme.error,
+                child: const Icon(Icons.person_remove_outlined),
+              ),
+              title: Text(S.t(context, 'delete_account')),
+              subtitle: Text(
+                S.t(context, 'delete_account_subtitle'),
+                style: const TextStyle(fontSize: 12.5),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => showDialog(
+                context: context,
+                builder: (_) => _DeleteAccountDialog(hasPassword: hasPassword),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           Card(
             color: Theme.of(context).colorScheme.errorContainer,
             child: ListTile(
@@ -259,6 +280,130 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           child: _saving
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
               : Text(S.t(context, 'save')),
+        ),
+      ],
+    );
+  }
+}
+
+/// Account deletion, which Play requires of any app that lets people
+/// create an account — and which this app has to be careful with, because
+/// a group's records belong to everyone in it, not only to whoever is
+/// leaving. What survives and what goes is explained here before anything
+/// is asked, and enforced in functions/index.js.
+class _DeleteAccountDialog extends StatefulWidget {
+  final bool hasPassword;
+  const _DeleteAccountDialog({required this.hasPassword});
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  final _passwordCtrl = TextEditingController();
+  bool _busy = false;
+  String? _error;
+  List<String> _blockingGroups = const [];
+
+  @override
+  void dispose() {
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _delete() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+      _blockingGroups = const [];
+    });
+    // Read the provider before any await: after the deletion the widget
+    // tree this dialog sits in is on its way out.
+    final auth = context.read<AppAuthProvider>();
+    try {
+      await AuthService().reauthenticate(password: _passwordCtrl.text);
+      await AccountService().deleteAccount();
+      if (!mounted) return;
+      Navigator.of(context).pop(); // the dialog
+      Navigator.of(context).pop(); // the account screen
+      await auth.signOut();
+    } on CreatorOfLiveGroups catch (e) {
+      if (mounted) {
+        setState(() {
+          _blockingGroups = e.groups;
+          _busy = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final message = '$e'.contains('invalid-credential') || '$e'.contains('wrong-password')
+          ? S.t(context, 'current_password_wrong')
+          : '$e'.replaceFirst('Bad state: ', '');
+      setState(() {
+        _error = message;
+        _busy = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final error = Theme.of(context).colorScheme.error;
+    return AlertDialog(
+      title: Text(S.t(context, 'delete_account')),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              S.t(context, 'delete_account_explainer'),
+              style: const TextStyle(fontSize: 13.5, height: 1.7),
+            ),
+            const SizedBox(height: 14),
+            if (widget.hasPassword)
+              TextField(
+                controller: _passwordCtrl,
+                obscureText: true,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: S.t(context, 'current_password'),
+                  border: const OutlineInputBorder(),
+                ),
+              )
+            else
+              Text(
+                S.t(context, 'delete_account_google_note'),
+                style: const TextStyle(fontSize: 12.5, color: AppColors.mutedText),
+              ),
+            if (_blockingGroups.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                S.t(context, 'delete_account_blocked'),
+                style: TextStyle(color: error, fontSize: 12.5, height: 1.6),
+              ),
+              const SizedBox(height: 4),
+              for (final name in _blockingGroups)
+                Text('• $name', style: TextStyle(color: error, fontSize: 12.5)),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(_error!, style: TextStyle(color: error, fontSize: 12.5)),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.of(context).pop(),
+          child: Text(S.t(context, 'cancel')),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: error),
+          onPressed: _busy ? null : _delete,
+          child: _busy
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(S.t(context, 'delete_account_confirm')),
         ),
       ],
     );

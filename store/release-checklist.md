@@ -3,29 +3,25 @@
 Ordered by what blocks what. Items marked **blocker** will fail review or
 cannot be answered honestly on a form until they are done.
 
-## 1. Account deletion — blocker, needs code
+## 1. Account deletion — done
 
 Play requires that an app which creates accounts lets a user delete that
-account **from inside the app**, and also gives a **web URL** where someone
-who has already uninstalled can request the same. Kistify has neither. The
-Data safety form asks this question directly, so it cannot be submitted
-truthfully today.
+account from inside the app, and gives a web URL for someone who has
+already uninstalled. Both now exist:
 
-What it needs:
-- An in-app "Delete my account" in Account, with re-authentication first.
-- What happens to the user's groups has to be decided, because a group is
-  shared property: a creator who leaves cannot silently take everyone's
-  records with them. The workable shape is that deleting an account
-  removes the user profile, their FCM tokens and their auth identity, and
-  marks their group memberships as exited, while the group's own records
-  (which other members depend on and which the audit log must keep) stay,
-  with their name showing as a removed account. A creator with a live
-  group has to delete or hand over that group first — and handing over
-  needs a creator-transfer path, which does not exist yet either.
-- `firestore.rules` currently has `allow delete: if false` on
-  `users/{uid}`; that has to open for the owner.
-- A page at `https://kistify.web.app/delete-account` describing the same,
-  for people who no longer have the app.
+- In-app: Account → "অ্যাকাউন্ট মুছে ফেলুন", after re-authentication.
+- Web: `https://kistify.web.app/delete-account`, linked from the privacy
+  policy.
+
+The deletion itself runs as a callable Cloud Function, because it has to
+delete a Firebase Auth user — something no client may do to itself here.
+Group records survive, since they belong to everyone in the group; a
+creator who still shares a group must hand it over (Group management →
+"Creator হস্তান্তর") or delete it first, and the app names the groups in
+the way.
+
+Answer the Data safety question "Do you provide a way for users to
+request that their data be deleted?" as **Yes**.
 
 ## 2. Store listing
 

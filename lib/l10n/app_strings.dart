@@ -171,6 +171,19 @@ class S {
       'sign_in_failed': 'ইমেইল বা পাসওয়ার্ড ঠিক নেই।',
       'enter_email_first': 'আগে আপনার ইমেইল ঠিকানাটি লিখুন।',
       'how_it_works': 'কীভাবে কাজ করে',
+      // Account deletion (Play requires it of any app with accounts) and
+      // the creator hand-over that makes leaving a shared group possible.
+      'delete_account': 'অ্যাকাউন্ট মুছে ফেলুন',
+      'delete_account_subtitle': 'আপনার প্রোফাইল ও লগইন স্থায়ীভাবে মুছে যাবে',
+      'delete_account_explainer': 'আপনার প্রোফাইল, লগইন আর নোটিফিকেশন স্থায়ীভাবে মুছে যাবে — এটি ফিরিয়ে আনা যাবে না।\n\nতবে যে গ্রুপগুলোতে আপনি সদস্য, সেগুলোর কিস্তি, পেমেন্ট ও অ্যাক্টিভিটি লগ থেকে যাবে — ওগুলো পুরো গ্রুপের হিসাব, শুধু আপনার নয়। ওখানে আপনার নামের জায়গায় "মুছে ফেলা অ্যাকাউন্ট" দেখাবে।\n\nযে গ্রুপ আপনি একাই চালান এবং আর কেউ নেই, সেটি আপনার সাথেই মুছে যাবে।',
+      'delete_account_google_note': 'নিশ্চিত করতে Google অ্যাকাউন্ট দিয়ে আবার লগইন করতে বলা হবে।',
+      'delete_account_blocked': 'এই গ্রুপগুলোর Creator আপনি, আর সেখানে অন্য সদস্য আছেন। আগে দায়িত্ব হস্তান্তর করুন বা গ্রুপটি মুছুন:',
+      'delete_account_confirm': 'স্থায়ীভাবে মুছুন',
+      'transfer_creator': 'Creator হস্তান্তর',
+      'transfer_creator_desc': 'গ্রুপের পূর্ণ দায়িত্ব অন্য একজন সদস্যকে দিন',
+      'transfer_creator_warning': 'যাকে দেবেন তিনি Creator হবেন, আর আপনি Admin হয়ে যাবেন।',
+      'transfer_creator_confirm': 'আপনি আর এই গ্রুপের Creator থাকবেন না। কাজটি নিজে থেকে ফেরানো যাবে না — নতুন Creator চাইলে আবার আপনাকে ফিরিয়ে দিতে পারবেন।',
+      'transfer_creator_no_members': 'হস্তান্তর করার মতো আর কোনো সক্রিয় সদস্য নেই।',
       // Paid tier (see lib/config/monetization.dart). None of this is
       // reachable while Monetization.enabled is false.
       'upgrade_title': 'প্যাকেজ',
@@ -394,6 +407,19 @@ class S {
       'sign_in_failed': 'That email or password is not right.',
       'enter_email_first': 'Enter your email address first.',
       'how_it_works': 'How it works',
+      // Account deletion (Play requires it of any app with accounts) and
+      // the creator hand-over that makes leaving a shared group possible.
+      'delete_account': 'Delete my account',
+      'delete_account_subtitle': 'Permanently removes your profile and sign-in',
+      'delete_account_explainer': 'Your profile, sign-in and notifications are deleted permanently. This cannot be undone.\n\nThe groups you belong to keep their contributions, payments and activity log — those are the whole group\'s records, not only yours. Your name there will read "deleted account".\n\nA group you run alone, with nobody else left in it, is deleted along with you.',
+      'delete_account_google_note': 'You will be asked to sign in with Google again to confirm.',
+      'delete_account_blocked': 'You are the Creator of these groups and other people are still in them. Hand them over or delete them first:',
+      'delete_account_confirm': 'Delete permanently',
+      'transfer_creator': 'Hand over Creator',
+      'transfer_creator_desc': 'Give full control of the group to another member',
+      'transfer_creator_warning': 'They become Creator; you become Admin.',
+      'transfer_creator_confirm': 'You will no longer be this group\'s Creator. You cannot undo this yourself — only the new Creator can hand it back.',
+      'transfer_creator_no_members': 'There is no other active member to hand this over to.',
       // Paid tier (see lib/config/monetization.dart). None of this is
       // reachable while Monetization.enabled is false.
       'upgrade_title': 'Packages',

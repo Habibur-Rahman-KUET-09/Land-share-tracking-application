@@ -3,14 +3,17 @@ import 'package:provider/provider.dart';
 
 import '../../config/monetization.dart';
 import '../../l10n/app_strings.dart';
+import '../../models/group_member.dart';
 import '../../models/group_tier.dart';
 import '../../models/land_group.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/account_service.dart';
 import '../../services/group_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/group_type_labels.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/kistify_app_bar.dart';
+import '../../widgets/member_name.dart';
 import '../billing/upgrade_screen.dart';
 import '../home/group_list_screen.dart';
 import '../migration/migration_screen.dart';
@@ -31,6 +34,7 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
   bool _renaming = false;
   late bool _singleManager = widget.group.singleManager;
   bool _savingMode = false;
+  bool _transferring = false;
 
   Future<void> _setSingleManager(bool value) async {
     setState(() {
@@ -53,6 +57,78 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
       }
     } finally {
       if (mounted) setState(() => _savingMode = false);
+    }
+  }
+
+  /// Hands the group to another active member. The creator role is the one
+  /// firestore.rules keys every management check off, so the swap runs
+  /// server-side as a single batch (functions/index.js) — two member docs
+  /// and the group doc moving separately would leave a window where the
+  /// group has two creators or none.
+  Future<void> _transferCreator() async {
+    final members = await GroupService().watchMembers(widget.group.id).first;
+    final candidates = members
+        .where((m) => m.isActive && m.uid != widget.group.createdBy)
+        .toList();
+    if (!mounted) return;
+    if (candidates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(S.t(context, 'transfer_creator_no_members'))),
+      );
+      return;
+    }
+
+    final chosen = await showDialog<GroupMember>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(S.t(context, 'transfer_creator')),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+            child: Text(
+              S.t(context, 'transfer_creator_warning'),
+              style: const TextStyle(fontSize: 12.5, height: 1.6, color: AppColors.mutedText),
+            ),
+          ),
+          for (final m in candidates)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(m),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: MemberName(uid: m.uid),
+              ),
+            ),
+        ],
+      ),
+    );
+    if (chosen == null || !mounted) return;
+
+    final confirmed = await showConfirmDialog(
+      context,
+      title: S.t(context, 'transfer_creator'),
+      message: S.t(context, 'transfer_creator_confirm'),
+      isDestructive: true,
+      confirmLabel: S.t(context, 'transfer_creator'),
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _transferring = true);
+    try {
+      await AccountService().transferCreator(
+        groupId: widget.group.id,
+        newCreatorUid: chosen.uid,
+      );
+      // Nothing on this screen is usable afterwards — every control here is
+      // creator-only, and the caller is no longer the creator.
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'.replaceFirst('Bad state: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _transferring = false);
     }
   }
 
@@ -202,6 +278,23 @@ class _GroupManagementScreenState extends State<GroupManagementScreen> {
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => MigrationScreen(group: widget.group)),
               ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Color(0x1A0F6E5C),
+                foregroundColor: AppColors.primary,
+                child: Icon(Icons.swap_horiz),
+              ),
+              title: Text(S.t(context, 'transfer_creator')),
+              subtitle: Text(
+                S.t(context, 'transfer_creator_desc'),
+                style: const TextStyle(fontSize: 12.5),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _transferring ? null : _transferCreator,
             ),
           ),
           // Hidden entirely until monetization is switched on — there is no

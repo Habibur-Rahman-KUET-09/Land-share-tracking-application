@@ -133,6 +133,53 @@ class AuthService {
   }
 
   // ---------------------------------------------------------------------
+  // Re-authentication
+  // ---------------------------------------------------------------------
+
+  /// Proves the person holding the phone is the account holder, right
+  /// before something irreversible.
+  ///
+  /// Firebase's own "recent login required" rule does not cover account
+  /// deletion here, because the deletion runs with admin rights on the
+  /// server (functions/index.js) rather than through `user.delete()`. So
+  /// this is the app's check, deliberately kept: an unlocked phone left on
+  /// a table should not be enough to erase someone's records.
+  ///
+  /// Password accounts prove it with their password; Google accounts by
+  /// going through Google again.
+  Future<void> reauthenticate({String? password}) async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('সাইন ইন করা নেই');
+
+    if (hasPasswordSignIn) {
+      if (password == null || password.isEmpty) {
+        throw FirebaseAuthException(code: 'missing-password', message: 'পাসওয়ার্ড দিন');
+      }
+      await user.reauthenticateWithCredential(
+        EmailAuthProvider.credential(email: user.email!, password: password),
+      );
+      return;
+    }
+
+    if (kIsWeb) {
+      await user.reauthenticateWithPopup(GoogleAuthProvider());
+      return;
+    }
+
+    final account = await _googleSignIn.signIn();
+    if (account == null) {
+      throw FirebaseAuthException(code: 'sign-in-canceled', message: 'Google sign-in was canceled.');
+    }
+    final googleAuth = await account.authentication;
+    await user.reauthenticateWithCredential(
+      GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
   // Phone OTP
   // ---------------------------------------------------------------------
 
