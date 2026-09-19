@@ -187,9 +187,15 @@ class DashboardScreen extends StatelessWidget {
                         const SizedBox(height: 6),
                         if (start != null)
                           Text(
-                            '${S.t(context, 'months_elapsed').replaceAll('{start}', '${start.month}/${start.year}').replaceAll('{n}', '$elapsedMonths')}'
-                            ' · ${S.t(context, 'total_collected')} '
-                            '${CurrencyFormatter.format(totalCollectedAllTime)}',
+                            // How long, how many times, how much — the three
+                            // facts behind the count above, in the order a
+                            // person says them.
+                            S
+                                .t(context, 'collected_summary')
+                                .replaceAll('{months}', '$elapsedMonths')
+                                .replaceAll('{times}', '${approved.length}')
+                                .replaceAll('{amount}',
+                                    CurrencyFormatter.format(totalCollectedAllTime)),
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
                           ),
