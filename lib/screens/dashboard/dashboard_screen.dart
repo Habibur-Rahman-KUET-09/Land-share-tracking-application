@@ -42,13 +42,19 @@ class DashboardScreen extends StatelessWidget {
                 .where((c) => c.month == now.month && c.year == now.year)
                 .fold<double>(0, (sum, c) => sum + c.amount);
 
-            // A month counts as complete when its approved collection reaches
-            // the group's monthly target. Months that collected something but
-            // not all of it are counted separately rather than ignored:
-            // migrated history is full of them — a group that paid ৳10,000 a
-            // month for years before raising it to ৳20,000 has every one of
-            // those older months fall short of today's target, and a card
-            // that silently drops 28 of a group's 35 months reads as broken.
+            // Two different questions, and an installment plan cares about
+            // the second one:
+            //
+            //   how many months did we collect in full?   (monthsCompleted)
+            //   how many installments have we paid off?   (installmentsPaid)
+            //
+            // The second is money divided by the monthly installment, so
+            // ৳10,000 in each of six months is three installments and a
+            // ৳60,000 month is three of them too. Counting whole months
+            // instead loses both: it throws away every part-month, and it
+            // caps a month that paid triple at one. A group with years of
+            // migrated history at an older, smaller monthly figure sees the
+            // difference immediately.
             final monthsSeen = approved.map((c) => '${c.year}-${c.month}').toSet();
             var monthsCompleted = 0;
             var monthsPartial = 0;
@@ -68,6 +74,11 @@ class DashboardScreen extends StatelessWidget {
               }
             }
 
+            // Whole installments; the remainder is still on its way.
+            final installmentsPaid = group.monthlyTotalToBuilder <= 0
+                ? 0
+                : (totalCollectedAllTime / group.monthlyTotalToBuilder).floor();
+
             // A lottery has no end figure to progress towards, and a savings
             // group's target is optional — without one this card would read
             // "৳0 / ৳0", so it's dropped rather than shown empty.
@@ -75,8 +86,13 @@ class DashboardScreen extends StatelessWidget {
 
             // A lottery runs exactly one round per member, so its length is
             // the membership rather than a planned installment count.
-            final totalMonths =
-                group.groupType.hasInstallmentCount ? group.totalInstallments : members.length;
+            final usesInstallments = group.groupType.hasInstallmentCount;
+            final totalMonths = usesInstallments ? group.totalInstallments : members.length;
+
+            // A lottery or savings cycle is measured in rounds taken, not in
+            // money divided by anything — there, a completed month is still
+            // the honest unit.
+            final progressCount = usesInstallments ? installmentsPaid : monthsCompleted;
 
             return ListView(
               padding: const EdgeInsets.all(16),
@@ -136,20 +152,21 @@ class DashboardScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       _ProgressBar(
-                        value: totalMonths <= 0 ? 0 : (monthsCompleted / totalMonths).clamp(0, 1.0),
+                        value: totalMonths <= 0 ? 0 : (progressCount / totalMonths).clamp(0, 1.0),
                         color: AppColors.roleCreatorFg,
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        '$monthsCompleted / $totalMonths ${S.t(context, 'months_complete')}',
+                        '$progressCount / $totalMonths '
+                        '${S.t(context, usesInstallments ? 'installments_complete' : 'months_complete')}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(fontSize: 14, color: AppColors.heading),
                       ),
-                      if (monthsPartial > 0) ...[
+                      if (usesInstallments) ...[
                         const SizedBox(height: 6),
                         Text(
-                          '$monthsPartial ${S.t(context, 'months_partial')} · '
-                          '${CurrencyFormatter.format(partialTotal)}',
+                          '${monthsSeen.length} ${S.t(context, 'months_collected')} · '
+                          '${CurrencyFormatter.format(totalCollectedAllTime)}',
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
                         ),
@@ -158,6 +175,14 @@ class DashboardScreen extends StatelessWidget {
                           '${CurrencyFormatter.format(group.monthlyTotalToBuilder)}',
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 11.5, color: AppColors.mutedText),
+                        ),
+                      ] else if (monthsPartial > 0) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          '$monthsPartial ${S.t(context, 'months_partial')} · '
+                          '${CurrencyFormatter.format(partialTotal)}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
                         ),
                       ],
                     ],
