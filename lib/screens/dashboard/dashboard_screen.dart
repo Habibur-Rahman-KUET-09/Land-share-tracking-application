@@ -79,6 +79,27 @@ class DashboardScreen extends StatelessWidget {
                 ? 0
                 : (totalCollectedAllTime / group.monthlyTotalToBuilder).floor();
 
+            // How long this group has been running, counted the way a person
+            // counts it: from the month of the first collection to this one,
+            // both included. Not the number of months that have entries —
+            // that number skips every month nobody paid in, and reads as a
+            // count of deposits rather than a length of time.
+            //
+            // For a migrated group the start is years before the group was
+            // created in the app, which is exactly why it comes from the
+            // records rather than from createdAt.
+            DateTime? firstCollection;
+            for (final c in approved) {
+              final month = DateTime(c.year, c.month);
+              if (firstCollection == null || month.isBefore(firstCollection)) {
+                firstCollection = month;
+              }
+            }
+            final start = firstCollection;
+            final elapsedMonths = start == null
+                ? 0
+                : (now.year - start.year) * 12 + (now.month - start.month) + 1;
+
             // A lottery has no end figure to progress towards, and a savings
             // group's target is optional — without one this card would read
             // "৳0 / ৳0", so it's dropped rather than shown empty.
@@ -164,12 +185,14 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       if (usesInstallments) ...[
                         const SizedBox(height: 6),
-                        Text(
-                          '${monthsSeen.length} ${S.t(context, 'months_collected')} · '
-                          '${CurrencyFormatter.format(totalCollectedAllTime)}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
-                        ),
+                        if (start != null)
+                          Text(
+                            '${S.t(context, 'months_elapsed').replaceAll('{start}', '${start.month}/${start.year}').replaceAll('{n}', '$elapsedMonths')}'
+                            ' · ${S.t(context, 'total_collected')} '
+                            '${CurrencyFormatter.format(totalCollectedAllTime)}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
+                          ),
                         Text(
                           '${S.t(context, 'monthly_target')} '
                           '${CurrencyFormatter.format(group.monthlyTotalToBuilder)}',
