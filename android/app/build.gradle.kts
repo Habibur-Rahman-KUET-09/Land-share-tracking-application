@@ -75,16 +75,28 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName(if (hasUploadKey) "upload" else "debug")
-            // R8 minification was tried here for app size, but it broke the
-            // app on a real Android 10 device (wouldn't open at all) — with
-            // no local Android SDK to test against before shipping, R8
-            // stripped something Firebase needed at runtime that the
-            // proguard-rules.pro keep-rules didn't cover. Reverted; the
-            // split-per-ABI build below is the safe part of that size win
-            // and stays. Re-enabling this needs verifying an actual release
-            // build launches on a real device first, not just CI compiling.
-            isMinifyEnabled = false
+            // R8. Play Console's bundle analysis flags a build without it
+            // ("DEX code optimization: Low", "No R8 metadata included"), and
+            // it is what shrinks and obfuscates the Java/Kotlin side.
+            //
+            // An earlier attempt at this shipped without keep-rules and the
+            // app wouldn't open at all on a real Android 10 phone — R8 had
+            // stripped something Firebase resolves by name at runtime. That
+            // gap is what android/app/proguard-rules.pro now closes, and the
+            // rules file is only read because of the proguardFiles line
+            // below: it was missing before, so the keep-rules that did exist
+            // were never applied at all.
+            //
+            // proguard-android-optimize.txt is AGP's own baseline (all the
+            // platform keeps, optimizations on). Resource shrinking stays
+            // off: it strips drawables looked up by name, it is a separate
+            // class of breakage, and it does nothing for the DEX score.
+            isMinifyEnabled = true
             isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
