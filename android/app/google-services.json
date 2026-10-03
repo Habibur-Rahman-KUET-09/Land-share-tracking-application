@@ -51,6 +51,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "510783432326-75nj0049e5ckgv1gd7lfaes8n4fs5rhi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.veryfew.kistify",
+            "certificate_hash": "f2d6dcb8d98580620f867202999bbf38ffee0c85"
+          }
+        },
+        {
           "client_id": "510783432326-cqsu52nq977f2m62vqlcobgk0irh5u80.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -64,14 +72,6 @@
           "android_info": {
             "package_name": "com.veryfew.kistify",
             "certificate_hash": "11f5bfcfb292321112ceb2baf4908420afdaee97"
-          }
-        },
-        {
-          "client_id": "510783432326-v5s6bg6nh73u1mhvmo5bd4tp0um1rlf4.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.veryfew.kistify",
-            "certificate_hash": "3f675431448691b93496d73bddc07c405ec25062"
           }
         },
         {
