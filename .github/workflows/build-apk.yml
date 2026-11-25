@@ -89,7 +89,7 @@ jobs:
         with:
           name: android-apk-install-on-phone
           path: build/app/outputs/flutter-apk/*.apk
-          retention-days: 30
+          retention-days: 7
 
       # An .aab cannot be installed on a device — Play opens it and builds
       # a per-device APK from it. Sideloading needs the APK above.
@@ -97,7 +97,7 @@ jobs:
         with:
           name: play-store-bundle-aab-upload-only
           path: build/app/outputs/bundle/release/*.aab
-          retention-days: 30
+          retention-days: 7
 
       # A permanent, login-free download link, which an Actions artifact is
       # not: artifacts need a GitHub account and expire. kistify.web.app's
